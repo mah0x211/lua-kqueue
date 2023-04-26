@@ -1,0 +1,70 @@
+name: test
+
+on: [push]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-11
+        lua-version:
+          - "5.1"
+          - "5.2"
+          - "5.3"
+          - "5.4"
+          - "luajit-2.0.5"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    -
+      name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+    -
+      name: Setup Lua ${{ matrix.lua-version }}
+      uses: leafo/gh-actions-lua@v8
+      with:
+        luaVersion: ${{ matrix.lua-version }}
+    -
+      name: Setup Luarocks
+      uses: leafo/gh-actions-luarocks@v4
+    -
+      name: Install dependencies for macOS
+      if: matrix.os == 'macos-11'
+      run: |
+        brew install lcov
+    -
+      name: Install dependencies for Ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt install lcov -y
+    -
+      name: Install
+      run: |
+        luarocks make KQUEUE_COVERAGE=1
+    -
+      name: Install Tools
+      run: |
+        luarocks install testcase
+        luarocks install io-fileno
+        luarocks install errno
+        luarocks install signal
+        luarocks install mah0x211/pipe
+    -
+      name: Run Test
+      run: |
+        testcase ./test/
+    -
+      name: Generate coverage reports
+      run: |
+        sh ./covgen.sh
+    -
+      name: Upload c coverage to Codecov
+      uses: codecov/codecov-action@v2
+      with:
+        files: ./coverage/lcov.info
+        flags: unittests
