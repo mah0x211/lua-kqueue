@@ -1,9 +1,6 @@
-local unpack = unpack or table.unpack
 local testcase = require('testcase')
 local kqueue = require('kqueue')
 local fileno = require('io.fileno')
-local errno = require('errno')
-local signal = require('signal')
 local pipe = require('pipe.io')
 
 if not kqueue.usable() then
@@ -46,152 +43,46 @@ function testcase.new()
     assert.match(kq, '^kqueue: ', false)
 end
 
-function testcase.add_and_del()
+function testcase.renew()
+    local kq = assert(kqueue.new())
+    local ev1 = kq:new_event()
+    assert(ev1:as_oneshot())
+    assert(ev1:as_write(TMPFD))
+
+    local nevt = assert(kq:wait())
+    assert.equal(nevt, 1)
+    assert.is_true(ev1:is_enabled())
+
+    -- test that renew a kqueue file descriptor and unconsumed events will be disabled
+    assert(kq:renew())
+    assert.is_false(ev1:is_enabled())
+    assert.is_nil(kq:consume())
+
+end
+
+function testcase.new_event()
     local kq = assert(kqueue.new())
 
-    -- test that add events
-    for i, args in ipairs({
-        {
-            kqueue.EVFILT_READ,
-            TMPFD,
-        },
-        {
-            kqueue.EVFILT_WRITE,
-            TMPFD,
-        },
-        {
-            kqueue.EVFILT_SIGNAL,
-            signal.SIGINT,
-        },
-        {
-            kqueue.EVFILT_TIMER,
-            123,
-            10,
-        },
-    }) do
-        local ok, err, errcode = kq:add(unpack(args))
-        assert(ok, err)
-        assert.is_nil(errcode)
-        assert.equal(#kq, i)
-    end
+    -- test that create a new event
+    local ev = kq:new_event()
+    assert.match(ev, '^kqueue%.event: ', false)
+end
 
-    -- test that del events
-    local nreg = #kq
-    for i, args in ipairs({
-        {
-            kqueue.EVFILT_READ,
-            TMPFD,
-        },
-        {
-            kqueue.EVFILT_WRITE,
-            TMPFD,
-        },
-        {
-            kqueue.EVFILT_SIGNAL,
-            signal.SIGINT,
-        },
-        {
-            kqueue.EVFILT_TIMER,
-            123,
-        },
-    }) do
-        local ok, err, errcode = kq:del(unpack(args))
-        assert(ok, err)
-        assert.is_nil(errcode)
-        assert.equal(#kq, nreg - i)
-    end
+function testcase.len()
+    local kq = assert(kqueue.new())
+    local ev = kq:new_event()
 
-    -- test that return error if arguments is invalid
-    for _, v in ipairs({
-        {
-            args = {
-                kqueue.EVFILT_READ,
-                -1,
-            },
-            res = {
-                false,
-                errno.EBADF.message,
-                errno.EBADF.code,
-            },
-        },
-        {
-            args = {
-                kqueue.EVFILT_WRITE,
-                -1,
-            },
-            res = {
-                false,
-                errno.EBADF.message,
-                errno.EBADF.code,
-            },
-        },
-        {
-            args = {
-                kqueue.EVFILT_SIGNAL,
-                1234567890,
-            },
-            res = {
-                false,
-                errno.EINVAL.message,
-                errno.EINVAL.code,
-            },
-        },
-        {
-            args = {
-                kqueue.EVFILT_TIMER,
-                123,
-                -1,
-            },
-            res = {
-                false,
-                errno.EINVAL.message,
-                errno.EINVAL.code,
-            },
-        },
-        {
-            -- unsupported filter
-            args = {
-                123457890,
-                123,
-            },
-            res = {
-                false,
-                errno.EINVAL.message,
-                errno.EINVAL.code,
-            },
-        },
-    }) do
-        local ok, err, errcode = kq:add(unpack(v.args))
-        assert.equal({
-            ok,
-            err,
-            errcode,
-        }, v.res)
-        assert.equal(#kq, 0)
-    end
-
-    -- test that return error if unsupported filter
-    for _, method in ipairs({
-        kq.add,
-        kq.del,
-    }) do
-        local ok, err, errcode = method(kq, 123457890, 123)
-        assert.equal({
-            ok,
-            err,
-            errcode,
-        }, {
-            false,
-            errno.EINVAL.message,
-            errno.EINVAL.code,
-        })
-        assert.equal(#kq, 0)
-    end
-
+    -- test that return number of registered events
+    assert.equal(#kq, 0)
+    assert(ev:as_read(TMPFD))
+    assert.equal(#kq, 1)
+    ev:unwatch()
+    assert.equal(#kq, 0)
 end
 
 function testcase.wait()
     local kq = assert(kqueue.new())
+    local ev = kq:new_event()
     local ctx = {
         'context',
     }
@@ -203,7 +94,7 @@ function testcase.wait()
     assert.equal(nevt, 0)
 
     -- test that return 1
-    assert(kq:add(kqueue.EVFILT_READ, TMPFD, ctx))
+    assert(ev:as_read(TMPFD, ctx))
     nevt = assert(kq:wait())
     assert.equal(nevt, 1)
 
@@ -218,50 +109,74 @@ function testcase.wait()
     assert.equal(nevt, 1)
 end
 
+function testcase.unconsumed_events_will_be_consumed_in_wait()
+    local kq = assert(kqueue.new())
+    local p = assert(pipe())
+    local ev1 = kq:new_event()
+    local ev2 = kq:new_event()
+    assert(p:write('test'))
+
+    assert(ev1:as_read(p.reader:fd()))
+    assert(ev2:as_oneshot())
+    assert(ev2:as_write(TMPFD))
+    p:closewr()
+
+    local nevt = assert(kq:wait())
+    assert.equal(nevt, 2)
+    assert.is_true(ev1:is_enabled())
+    assert.is_true(ev2:is_enabled())
+
+    -- test that wait() will consume unconsumed events
+    nevt = assert(kq:wait())
+    assert.equal(nevt, 0)
+    assert.is_false(ev1:is_enabled())
+    assert.is_false(ev2:is_enabled())
+end
+
 function testcase.consume()
     local kq = assert(kqueue.new())
+    local ev = kq:new_event()
     assert(TMPFILE:write('test'))
     TMPFILE:seek('set')
-    assert(kq:add(kqueue.EVFILT_READ, TMPFD, {
+    assert(ev:as_read(TMPFD, {
         'context',
     }))
 
     -- test that return number of occurred events
     assert.equal(assert(kq:wait()), 1)
-    local ev = assert(kq:consume())
-    assert.is_table(ev)
-    assert.equal(ev, {
-        ident = TMPFD,
-        filter = kqueue.EVFILT_READ,
-        flags = 0,
-        fflags = 0,
-        data = 4,
-        udata = {
-            'context',
-        },
+    local oev, ctx, disabled = assert(kq:consume())
+    assert.equal(oev, ev)
+    assert.equal(ctx, {
+        'context',
     })
+    assert.is_nil(disabled)
 
     -- test that return nil if consumed all events
-    ev = kq:consume()
-    assert.is_nil(ev)
+    oev = kq:consume()
+    assert.is_nil(oev)
 end
 
-function testcase.eof_event()
+function testcase.eof_event_will_be_disabled_in_consume()
     local kq = assert(kqueue.new())
     local p = assert(pipe())
     assert(p:write('test'))
-    assert(kq:add(kqueue.EVFILT_READ, p.reader:fd(), {
+    local ev = kq:new_event()
+    assert(ev:as_read(p.reader:fd(), {
         'context',
     }))
 
     -- test that return number of occurred events
     p:closewr()
     assert.equal(assert(kq:wait()), 1)
-    local ev = assert(kq:consume())
-    assert.is_table(ev)
-    assert.equal(ev, {
+    local oev, ctx, disabled = assert(kq:consume())
+    assert.equal(oev, ev)
+    assert.equal(ctx, {
+        'context',
+    })
+    assert.is_true(disabled)
+    assert.equal(#kq, 0)
+    assert.equal(ev:getinfo('occurred'), {
         ident = p.reader:fd(),
-        filter = kqueue.EVFILT_READ,
         flags = 0,
         fflags = 0,
         data = 4,
@@ -276,21 +191,62 @@ function testcase.eof_event()
     assert.is_nil(ev)
 end
 
-function testcase.add_edge()
+function testcase.oneshot_event_will_be_disabled_in_consume()
     local kq = assert(kqueue.new())
     assert(TMPFILE:write('test'))
     TMPFILE:seek('set')
-    assert(kq:add_edge(kqueue.EVFILT_READ, TMPFD, {
+    local ev = kq:new_event()
+    ev:as_oneshot()
+    assert(ev:as_read(TMPFD, {
+        'context',
+    }))
+
+    -- test that oneshot-trigger event
+    assert.equal(assert(kq:wait()), 1)
+    local oev, ctx, disabled = assert(kq:consume())
+    assert.equal(oev, ev)
+    assert.equal(ctx, {
+        'context',
+    })
+    assert.is_true(disabled)
+    assert.equal(#kq, 0)
+    assert.equal(ev:getinfo('occurred'), {
+        ident = TMPFD,
+        flags = 0,
+        fflags = 0,
+        data = 4,
+        oneshot = true,
+        udata = {
+            'context',
+        },
+    })
+
+    -- test that onshot-event will be deleted after event occurred
+    assert.equal(#kq, 0)
+    TMPFILE:seek('set', 1)
+    assert.equal(assert(kq:wait(10)), 0)
+end
+
+function testcase.edge_triggered_event_will_not_repeat()
+    local kq = assert(kqueue.new())
+    assert(TMPFILE:write('test'))
+    TMPFILE:seek('set')
+    local ev = kq:new_event()
+    ev:as_edge()
+    assert(ev:as_read(TMPFD, {
         'context',
     }))
 
     -- test that edge-trigger event
     assert.equal(assert(kq:wait()), 1)
-    local ev = assert(kq:consume())
-    assert.is_table(ev)
-    assert.equal(ev, {
+    local oev, ctx, disabled = assert(kq:consume())
+    assert.equal(oev, ev)
+    assert.equal(ctx, {
+        'context',
+    })
+    assert.is_nil(disabled)
+    assert.equal(ev:getinfo('occurred'), {
         ident = TMPFD,
-        filter = kqueue.EVFILT_READ,
         flags = 0,
         fflags = 0,
         data = 4,
@@ -307,35 +263,5 @@ function testcase.add_edge()
     -- test that event occur if descriptor has changed
     TMPFILE:seek('set', 1)
     assert.equal(assert(kq:wait()), 1)
-end
-
-function testcase.add_oneshot()
-    local kq = assert(kqueue.new())
-    assert(TMPFILE:write('test'))
-    TMPFILE:seek('set')
-    assert(kq:add_oneshot(kqueue.EVFILT_READ, TMPFD, {
-        'context',
-    }))
-
-    -- test that oneshot-trigger event
-    assert.equal(assert(kq:wait()), 1)
-    local ev = assert(kq:consume())
-    assert.is_table(ev)
-    assert.equal(ev, {
-        ident = TMPFD,
-        filter = kqueue.EVFILT_READ,
-        flags = 0,
-        fflags = 0,
-        data = 4,
-        oneshot = true,
-        udata = {
-            'context',
-        },
-    })
-
-    -- test that onshot-event will be deleted after event occurred
-    assert.equal(#kq, 0)
-    TMPFILE:seek('set', 1)
-    assert.equal(assert(kq:wait(10)), 0)
 end
 

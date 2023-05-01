@@ -22,5 +22,5 @@ $(TARGET): $(patsubst %.c,%.o,$(wildcard impl/*.c))
 install:
 	$(INSTALL) -d $(INST_LIBDIR)
 	$(INSTALL) $(TARGET) $(INST_LIBDIR)
-	rm -f $(OBJS) $(TARGET) $(GCDAS)
+	rm -f impl/*.o impl/*.gcda $(TARGET)
 
