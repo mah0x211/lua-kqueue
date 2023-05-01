@@ -22,54 +22,54 @@
 
 #include "lua_kqueue.h"
 
-#define MODULE_MT KQ_EVENT_MT
+#define MODULE_MT POLL_EVENT_MT
 
 static int as_oneshot_lua(lua_State *L)
 {
-    return kq_event_as_oneshot_lua(L, MODULE_MT);
+    return poll_event_as_oneshot_lua(L, MODULE_MT);
 }
 
 static int is_oneshot_lua(lua_State *L)
 {
-    return kq_event_is_oneshot_lua(L, MODULE_MT);
+    return poll_event_is_oneshot_lua(L, MODULE_MT);
 }
 
 static int as_edge_lua(lua_State *L)
 {
-    return kq_event_as_edge_lua(L, MODULE_MT);
+    return poll_event_as_edge_lua(L, MODULE_MT);
 }
 
 static int is_edge_lua(lua_State *L)
 {
-    return kq_event_is_edge_lua(L, MODULE_MT);
+    return poll_event_is_edge_lua(L, MODULE_MT);
 }
 
 static int as_level_lua(lua_State *L)
 {
-    return kq_event_as_level_lua(L, MODULE_MT);
+    return poll_event_as_level_lua(L, MODULE_MT);
 }
 
 static int is_level_lua(lua_State *L)
 {
-    return kq_event_is_level_lua(L, MODULE_MT);
+    return poll_event_is_level_lua(L, MODULE_MT);
 }
 
 static int renew_lua(lua_State *L)
 {
-    return kq_event_renew_lua(L, MODULE_MT);
+    return poll_event_renew_lua(L, MODULE_MT);
 }
 
 static int tostring_lua(lua_State *L)
 {
-    return kq_event_tostring_lua(L, MODULE_MT);
+    return poll_event_tostring_lua(L, MODULE_MT);
 }
 
 static int gc_lua(lua_State *L)
 {
-    return kq_event_gc_lua(L);
+    return poll_event_gc_lua(L);
 }
 
-void luaopen_kqueue_event(lua_State *L)
+void libopen_poll_event(lua_State *L)
 {
     struct luaL_Reg mmethod[] = {
         {"__gc",       gc_lua      },
@@ -77,18 +77,18 @@ void luaopen_kqueue_event(lua_State *L)
         {NULL,         NULL        }
     };
     struct luaL_Reg method[] = {
-        {"renew",      renew_lua        },
-        {"is_level",   is_level_lua     },
-        {"as_level",   as_level_lua     },
-        {"is_edge",    is_edge_lua      },
-        {"as_edge",    as_edge_lua      },
-        {"is_oneshot", is_oneshot_lua   },
-        {"as_oneshot", as_oneshot_lua   },
-        {"as_read",    kqueue_raed_new  },
-        {"as_write",   kqueue_write_new },
-        {"as_signal",  kqueue_signal_new},
-        {"as_timer",   kqueue_timer_new },
-        {NULL,         NULL             }
+        {"renew",      renew_lua      },
+        {"is_level",   is_level_lua   },
+        {"as_level",   as_level_lua   },
+        {"is_edge",    is_edge_lua    },
+        {"as_edge",    as_edge_lua    },
+        {"is_oneshot", is_oneshot_lua },
+        {"as_oneshot", as_oneshot_lua },
+        {"as_read",    poll_raed_new  },
+        {"as_write",   poll_write_new },
+        {"as_signal",  poll_signal_new},
+        {"as_timer",   poll_timer_new },
+        {NULL,         NULL           }
     };
 
     // create metatable

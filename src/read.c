@@ -22,13 +22,13 @@
 
 #include "lua_kqueue.h"
 
-#define MODULE_MT KQ_READ_MT
+#define MODULE_MT POLL_READ_MT
 
 // TODO: implement data_lua
 // int data_lua(lua_State *L, const char *tname)
 // {
 //     int narg       = lua_gettop(L);
-//     kq_event_t *ev = luaL_checkudata(L, 1, tname);
+//     poll_event_t *ev = luaL_checkudata(L, 1, tname);
 
 //     lua_pushinteger(L, ev->registered.data);
 //     if (narg > 1) {
@@ -55,7 +55,7 @@
 // static int fflags_lua(lua_State *L)
 // {
 //     int narg       = lua_gettop(L);
-//     kq_event_t *ev = luaL_checkudata(L, 1, MODULE_MT);
+//     poll_event_t *ev = luaL_checkudata(L, 1, MODULE_MT);
 
 //     lua_pushinteger(L, ev->registered.fflags);
 //     if (narg > 1) {
@@ -95,88 +95,88 @@
 
 static int getinfo_lua(lua_State *L)
 {
-    return kq_event_getinfo_lua(L, MODULE_MT);
+    return poll_event_getinfo_lua(L, MODULE_MT);
 }
 
 static int udata_lua(lua_State *L)
 {
-    return kq_event_udata_lua(L, MODULE_MT);
+    return poll_event_udata_lua(L, MODULE_MT);
 }
 
 static int ident_lua(lua_State *L)
 {
-    return kq_event_ident_lua(L, MODULE_MT);
+    return poll_event_ident_lua(L, MODULE_MT);
 }
 
 static int as_oneshot_lua(lua_State *L)
 {
-    return kq_event_as_oneshot_lua(L, MODULE_MT);
+    return poll_event_as_oneshot_lua(L, MODULE_MT);
 }
 
 static int is_oneshot_lua(lua_State *L)
 {
-    return kq_event_is_oneshot_lua(L, MODULE_MT);
+    return poll_event_is_oneshot_lua(L, MODULE_MT);
 }
 
 static int as_edge_lua(lua_State *L)
 {
-    return kq_event_as_edge_lua(L, MODULE_MT);
+    return poll_event_as_edge_lua(L, MODULE_MT);
 }
 
 static int is_edge_lua(lua_State *L)
 {
-    return kq_event_is_edge_lua(L, MODULE_MT);
+    return poll_event_is_edge_lua(L, MODULE_MT);
 }
 
 static int as_level_lua(lua_State *L)
 {
-    return kq_event_as_level_lua(L, MODULE_MT);
+    return poll_event_as_level_lua(L, MODULE_MT);
 }
 
 static int is_level_lua(lua_State *L)
 {
-    return kq_event_is_level_lua(L, MODULE_MT);
+    return poll_event_is_level_lua(L, MODULE_MT);
 }
 
 static int is_enabled_lua(lua_State *L)
 {
-    return kq_event_is_enabled_lua(L, MODULE_MT);
+    return poll_event_is_enabled_lua(L, MODULE_MT);
 }
 
 static int unwatch_lua(lua_State *L)
 {
-    return kq_event_unwatch_lua(L, MODULE_MT);
+    return poll_event_unwatch_lua(L, MODULE_MT);
 }
 
 static int watch_lua(lua_State *L)
 {
-    return kq_event_watch_lua(L, MODULE_MT);
+    return poll_event_watch_lua(L, MODULE_MT);
 }
 
 static int revert_lua(lua_State *L)
 {
-    return kq_event_revert_lua(L, MODULE_MT);
+    return poll_event_revert_lua(L, MODULE_MT);
 }
 
 static int renew_lua(lua_State *L)
 {
-    return kq_event_renew_lua(L, MODULE_MT);
+    return poll_event_renew_lua(L, MODULE_MT);
 }
 
 static int tostring_lua(lua_State *L)
 {
-    return kq_event_tostring_lua(L, MODULE_MT);
+    return poll_event_tostring_lua(L, MODULE_MT);
 }
 
 static int gc_lua(lua_State *L)
 {
-    return kq_event_gc_lua(L);
+    return poll_event_gc_lua(L);
 }
 
-int kqueue_raed_new(lua_State *L)
+int poll_raed_new(lua_State *L)
 {
-    kq_event_t *ev = luaL_checkudata(L, 1, KQ_EVENT_MT);
-    int fd         = luaL_checkinteger(L, 2);
+    poll_event_t *ev = luaL_checkudata(L, 1, POLL_EVENT_MT);
+    int fd           = luaL_checkinteger(L, 2);
 
     // keep udata reference
     if (!lua_isnoneornil(L, 3)) {
@@ -184,7 +184,7 @@ int kqueue_raed_new(lua_State *L)
     }
 
     EV_SET(&ev->registered, fd, EVFILT_READ, ev->registered.flags, 0, 0, ev);
-    if (kq_watch_event(L, ev, 1) != KQ_OK) {
+    if (poll_watch_event(L, ev, 1) != KQ_OK) {
         lua_pushnil(L);
         lua_pushstring(L, strerror(errno));
         lua_pushinteger(L, errno);
@@ -197,7 +197,7 @@ int kqueue_raed_new(lua_State *L)
     return 1;
 }
 
-void luaopen_kqueue_read(lua_State *L)
+void libopen_poll_read(lua_State *L)
 {
     struct luaL_Reg mmethod[] = {
         {"__gc",       gc_lua      },

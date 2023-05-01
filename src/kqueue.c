@@ -24,26 +24,26 @@
 
 static int consume_lua(lua_State *L)
 {
-    kq_t *kq          = luaL_checkudata(L, 1, KQ_MT);
-    struct kevent evt = {0};
+    poll_t *p   = luaL_checkudata(L, 1, POLL_MT);
+    event_t evt = {0};
 
 RECONSUME:
     lua_settop(L, 1);
 
-    if (kq->nevt == 0) {
+    if (p->nevt == 0) {
         lua_pushnil(L);
         return 1;
     }
 
-    evt = kq->evlist[kq->cur++];
-    if (kq->cur >= kq->nevt) {
+    evt = p->evlist[p->cur++];
+    if (p->cur >= p->nevt) {
         // free event list if all events are consumed
-        kq->nevt = 0;
+        p->nevt = 0;
     }
 
-    // NOTE: if kq_evset_get() returns a kq_event_t instance, it is placed on
-    // the stack top.
-    kq_event_t *ev = kq_evset_get(L, kq, &evt);
+    // NOTE: if poll_evset_get() returns a poll_event_t instance, it is placed
+    // on the stack top.
+    poll_event_t *ev = poll_evset_get(L, p, &evt);
     if (!ev) {
         // event is already unwatched
         goto RECONSUME;
@@ -54,13 +54,13 @@ RECONSUME:
     if (evt.flags & EV_ONESHOT) {
         // oneshot event must be removed from the event set table and manually
         // disable event
-        kq_evset_del(L, kq, &evt);
+        poll_evset_del(L, p, &evt);
         ev->enabled = 0;
         lua_pushboolean(L, 1);
         return 3;
     } else if (evt.flags & (EV_EOF | EV_ERROR)) {
         // event should be disabled when error occurred or EV_EOF is set
-        if (kq_unwatch_event(L, ev) == KQ_ERROR) {
+        if (poll_unwatch_event(L, ev) == KQ_ERROR) {
             lua_pushnil(L);
             lua_pushstring(L, strerror(errno));
             lua_pushinteger(L, errno);
@@ -75,21 +75,21 @@ RECONSUME:
 
 static int wait_lua(lua_State *L)
 {
-    kq_t *kq         = luaL_checkudata(L, 1, KQ_MT);
+    poll_t *p        = luaL_checkudata(L, 1, POLL_MT);
     // default timeout: -1(never timeout)
     lua_Integer msec = luaL_optinteger(L, 2, -1);
 
     // cleanup current events
-    while (kq->cur < kq->nevt) {
-        struct kevent evt = kq->evlist[kq->cur++];
-        kq_event_t *ev    = evt.udata;
+    while (p->cur < p->nevt) {
+        event_t evt      = p->evlist[p->cur++];
+        poll_event_t *ev = evt.udata;
 
         // oneshot event
         if (evt.flags & EV_ONESHOT) {
-            kq_evset_del(L, kq, &evt);
+            poll_evset_del(L, p, &evt);
             ev->enabled = 0;
         } else if (evt.flags & EV_ERROR || evt.flags & EV_EOF) {
-            if (kq_unwatch_event(L, ev) == KQ_ERROR) {
+            if (poll_unwatch_event(L, ev) == KQ_ERROR) {
                 lua_pushnil(L);
                 lua_pushstring(L, strerror(errno));
                 lua_pushinteger(L, errno);
@@ -98,38 +98,38 @@ static int wait_lua(lua_State *L)
         }
     }
 
-    kq->cur  = 0;
-    kq->nevt = 0;
-    if (kq->nreg == 0) {
+    p->cur  = 0;
+    p->nevt = 0;
+    if (p->nreg == 0) {
         // do not wait the event occurrs if no registered events exists
         lua_pushinteger(L, 0);
         return 1;
     }
 
     // grow event list
-    if (kq->evsize < kq->nreg) {
-        kq->evlist     = lua_newuserdata(L, sizeof(struct kevent) * kq->nreg);
-        kq->ref_evlist = unref(L, kq->ref_evlist);
-        kq->ref_evlist = getref(L);
-        kq->evsize     = kq->nreg;
+    if (p->evsize < p->nreg) {
+        p->evlist     = lua_newuserdata(L, sizeof(event_t) * p->nreg);
+        p->ref_evlist = unref(L, p->ref_evlist);
+        p->ref_evlist = getref(L);
+        p->evsize     = p->nreg;
     }
 
     int nevt = 0;
     if (msec <= 0) {
         // wait event forever
-        nevt = kevent(kq->fd, NULL, 0, kq->evlist, kq->nreg, NULL);
+        nevt = kevent(p->fd, NULL, 0, p->evlist, p->nreg, NULL);
     } else {
         // wait event until timeout occurs
         struct timespec ts = {
             .tv_sec  = msec / 1000,
             .tv_nsec = (msec % 1000) * 1000000,
         };
-        nevt = kevent(kq->fd, NULL, 0, kq->evlist, kq->nreg, &ts);
+        nevt = kevent(p->fd, NULL, 0, p->evlist, p->nreg, &ts);
     }
 
     // return number of event
     if (nevt != -1) {
-        kq->nevt = nevt;
+        p->nevt = nevt;
         lua_pushinteger(L, nevt);
         return 1;
     }
@@ -154,18 +154,18 @@ static int wait_lua(lua_State *L)
 
 static int new_event_lua(lua_State *L)
 {
-    kq_t *kq       = luaL_checkudata(L, 1, KQ_MT);
-    kq_event_t *ev = lua_newuserdata(L, sizeof(kq_event_t));
+    poll_t *p        = luaL_checkudata(L, 1, POLL_MT);
+    poll_event_t *ev = lua_newuserdata(L, sizeof(poll_event_t));
 
-    *ev = (kq_event_t){
-        .kq         = kq,
-        .ref_kq     = getrefat(L, 1),
+    *ev = (poll_event_t){
+        .p          = p,
+        .ref_poll   = getrefat(L, 1),
         .ref_udata  = LUA_NOREF,
-        .registered = (struct kevent){0},
-        .occurred   = (struct kevent){0},
+        .registered = (event_t){0},
+        .occurred   = (event_t){0},
     };
     // set metatable
-    luaL_getmetatable(L, KQ_EVENT_MT);
+    luaL_getmetatable(L, POLL_EVENT_MT);
     lua_setmetatable(L, -2);
 
     return 1;
@@ -173,26 +173,26 @@ static int new_event_lua(lua_State *L)
 
 static int renew_lua(lua_State *L)
 {
-    kq_t *kq = luaL_checkudata(L, 1, KQ_MT);
+    poll_t *p = luaL_checkudata(L, 1, POLL_MT);
 
     // cleanup current events before renew
-    while (kq->cur < kq->nevt) {
-        struct kevent evt = kq->evlist[kq->cur++];
-        kq_event_t *ev    = evt.udata;
+    while (p->cur < p->nevt) {
+        event_t evt      = p->evlist[p->cur++];
+        poll_event_t *ev = evt.udata;
 
         // oneshot event
         if (evt.flags & EV_ONESHOT) {
-            kq_evset_del(L, kq, &evt);
+            poll_evset_del(L, p, &evt);
             ev->enabled = 0;
-        } else if (kq_unwatch_event(L, ev) == KQ_ERROR) {
+        } else if (poll_unwatch_event(L, ev) == KQ_ERROR) {
             lua_pushboolean(L, 0);
             lua_pushstring(L, strerror(errno));
             lua_pushinteger(L, errno);
             return 3;
         }
     }
-    kq->cur  = 0;
-    kq->nevt = 0;
+    p->cur  = 0;
+    p->nevt = 0;
 
     int fd = kqueue();
     if (fd == -1) {
@@ -204,8 +204,8 @@ static int renew_lua(lua_State *L)
     }
 
     // close unused descriptor
-    close(kq->fd);
-    kq->fd = fd;
+    close(p->fd);
+    p->fd = fd;
 
     lua_pushboolean(L, 1);
     return 1;
@@ -213,37 +213,37 @@ static int renew_lua(lua_State *L)
 
 static int len_lua(lua_State *L)
 {
-    kq_t *kq = luaL_checkudata(L, 1, KQ_MT);
-    lua_pushinteger(L, kq->nreg);
+    poll_t *p = luaL_checkudata(L, 1, POLL_MT);
+    lua_pushinteger(L, p->nreg);
     return 1;
 }
 
 static int tostring_lua(lua_State *L)
 {
-    lua_pushfstring(L, KQ_MT ": %p", lua_touserdata(L, 1));
+    lua_pushfstring(L, POLL_MT ": %p", lua_touserdata(L, 1));
     return 1;
 }
 
 static int gc_lua(lua_State *L)
 {
-    kq_t *kq = lua_touserdata(L, 1);
+    poll_t *p = lua_touserdata(L, 1);
 
-    close(kq->fd);
-    unref(L, kq->ref_evset_read);
-    unref(L, kq->ref_evset_write);
-    unref(L, kq->ref_evset_signal);
-    unref(L, kq->ref_evset_timer);
-    unref(L, kq->ref_evlist);
+    close(p->fd);
+    unref(L, p->ref_evset_read);
+    unref(L, p->ref_evset_write);
+    unref(L, p->ref_evset_signal);
+    unref(L, p->ref_evset_timer);
+    unref(L, p->ref_evlist);
 
     return 0;
 }
 
 static int new_lua(lua_State *L)
 {
-    kq_t *kq = lua_newuserdata(L, sizeof(kq_t));
+    poll_t *p = lua_newuserdata(L, sizeof(poll_t));
 
-    *kq = (kq_t){
-        // create kqueue descriptor
+    *p = (poll_t){
+        // create poll descriptor
         .fd               = kqueue(),
         .ref_evset_read   = LUA_NOREF,
         .ref_evset_write  = LUA_NOREF,
@@ -251,25 +251,25 @@ static int new_lua(lua_State *L)
         .ref_evset_timer  = LUA_NOREF,
         .ref_evlist       = LUA_NOREF,
     };
-    if (kq->fd == -1) {
+    if (p->fd == -1) {
         // got error
         lua_pushnil(L);
         lua_pushstring(L, strerror(errno));
         lua_pushinteger(L, errno);
         return 3;
     }
-    luaL_getmetatable(L, KQ_MT);
+    luaL_getmetatable(L, POLL_MT);
     lua_setmetatable(L, -2);
 
     // create evset tables
     lua_newtable(L);
-    kq->ref_evset_read = getref(L);
+    p->ref_evset_read = getref(L);
     lua_newtable(L);
-    kq->ref_evset_write = getref(L);
+    p->ref_evset_write = getref(L);
     lua_newtable(L);
-    kq->ref_evset_signal = getref(L);
+    p->ref_evset_signal = getref(L);
     lua_newtable(L);
-    kq->ref_evset_timer = getref(L);
+    p->ref_evset_timer = getref(L);
 
     return 1;
 }
@@ -296,14 +296,14 @@ LUALIB_API int luaopen_kqueue(lua_State *L)
         {NULL,        NULL         }
     };
 
-    luaopen_kqueue_event(L);
-    luaopen_kqueue_read(L);
-    luaopen_kqueue_write(L);
-    luaopen_kqueue_signal(L);
-    luaopen_kqueue_timer(L);
+    libopen_poll_event(L);
+    libopen_poll_read(L);
+    libopen_poll_write(L);
+    libopen_poll_signal(L);
+    libopen_poll_timer(L);
 
     // create metatable
-    luaL_newmetatable(L, KQ_MT);
+    luaL_newmetatable(L, POLL_MT);
     // metamethods
     for (struct luaL_Reg *ptr = mmethod; ptr->name; ptr++) {
         lua_pushcfunction(L, ptr->func);
