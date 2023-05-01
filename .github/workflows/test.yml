@@ -60,12 +60,10 @@ jobs:
         testcase ./test/
     -
       name: Generate coverage reports
-      if: matrix.os == 'macos-11'
       run: |
         sh ./covgen.sh
     -
       name: Upload c coverage to Codecov
-      if: matrix.os == 'macos-11'
       uses: codecov/codecov-action@v2
       with:
         files: ./coverage/lcov.info
