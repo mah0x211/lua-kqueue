@@ -48,7 +48,7 @@ RECONSUME:
         // event is already unwatched
         goto RECONSUME;
     }
-    ev->occurred = evt;
+    ev->occ_evt = evt;
     pushref(L, ev->ref_udata);
 
     if (evt.flags & EV_ONESHOT) {
@@ -60,7 +60,7 @@ RECONSUME:
         return 3;
     } else if (evt.flags & (EV_EOF | EV_ERROR)) {
         // event should be disabled when error occurred or EV_EOF is set
-        if (poll_unwatch_event(L, ev) == KQ_ERROR) {
+        if (poll_unwatch_event(L, ev) == POLL_ERROR) {
             lua_pushnil(L);
             lua_pushstring(L, strerror(errno));
             lua_pushinteger(L, errno);
@@ -89,7 +89,7 @@ static int wait_lua(lua_State *L)
             poll_evset_del(L, p, &evt);
             ev->enabled = 0;
         } else if (evt.flags & EV_ERROR || evt.flags & EV_EOF) {
-            if (poll_unwatch_event(L, ev) == KQ_ERROR) {
+            if (poll_unwatch_event(L, ev) == POLL_ERROR) {
                 lua_pushnil(L);
                 lua_pushstring(L, strerror(errno));
                 lua_pushinteger(L, errno);
@@ -158,11 +158,11 @@ static int new_event_lua(lua_State *L)
     poll_event_t *ev = lua_newuserdata(L, sizeof(poll_event_t));
 
     *ev = (poll_event_t){
-        .p          = p,
-        .ref_poll   = getrefat(L, 1),
-        .ref_udata  = LUA_NOREF,
-        .registered = (event_t){0},
-        .occurred   = (event_t){0},
+        .p         = p,
+        .ref_poll  = getrefat(L, 1),
+        .ref_udata = LUA_NOREF,
+        .reg_evt   = (event_t){0},
+        .occ_evt   = (event_t){0},
     };
     // set metatable
     luaL_getmetatable(L, POLL_EVENT_MT);
@@ -184,7 +184,7 @@ static int renew_lua(lua_State *L)
         if (evt.flags & EV_ONESHOT) {
             poll_evset_del(L, p, &evt);
             ev->enabled = 0;
-        } else if (poll_unwatch_event(L, ev) == KQ_ERROR) {
+        } else if (poll_unwatch_event(L, ev) == POLL_ERROR) {
             lua_pushboolean(L, 0);
             lua_pushstring(L, strerror(errno));
             lua_pushinteger(L, errno);

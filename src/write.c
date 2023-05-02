@@ -34,7 +34,7 @@
 //     int narg       = lua_gettop(L);
 //     poll_event_t *ev = luaL_checkudata(L, 1, MODULE_MT);
 
-//     lua_pushinteger(L, ev->registered.fflags);
+//     lua_pushinteger(L, ev->reg_evt.fflags);
 //     if (narg > 1) {
 //         if (ev->ref_self != LUA_NOREF) {
 //             // event is in use
@@ -47,13 +47,13 @@
 
 //         if (lua_isnoneornil(L, 2)) {
 //             // clear fflags
-//             ev->registered.fflags = 0;
+//             ev->reg_evt.fflags = 0;
 //         } else {
 //             int fflags = luaL_checkinteger(L, 2);
 
 //             switch (fflags) {
 //             case NOTE_LOWAT:
-//                 ev->registered.fflags = fflags;
+//                 ev->reg_evt.fflags = fflags;
 //                 break;
 
 //             default:
@@ -160,8 +160,8 @@ int poll_write_new(lua_State *L)
         ev->ref_udata = getrefat(L, 3);
     }
 
-    EV_SET(&ev->registered, fd, EVFILT_WRITE, ev->registered.flags, 0, 0, ev);
-    if (poll_watch_event(L, ev, 1) != KQ_OK) {
+    EV_SET(&ev->reg_evt, fd, EVFILT_WRITE, ev->reg_evt.flags, 0, 0, ev);
+    if (poll_watch_event(L, ev, 1) != POLL_OK) {
         lua_pushnil(L);
         lua_pushstring(L, strerror(errno));
         lua_pushinteger(L, errno);

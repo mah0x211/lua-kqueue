@@ -30,7 +30,7 @@
 //     int narg       = lua_gettop(L);
 //     poll_event_t *ev = luaL_checkudata(L, 1, tname);
 
-//     lua_pushinteger(L, ev->registered.data);
+//     lua_pushinteger(L, ev->reg_evt.data);
 //     if (narg > 1) {
 //         int data = 0;
 //         if (!lua_isnoneornil(L, 2)) {
@@ -45,7 +45,7 @@
 //             lua_pushinteger(L, errno);
 //             return 3;
 //         }
-//         ev->registered.data = data;
+//         ev->reg_evt.data = data;
 //     }
 
 //     return 1;
@@ -57,7 +57,7 @@
 //     int narg       = lua_gettop(L);
 //     poll_event_t *ev = luaL_checkudata(L, 1, MODULE_MT);
 
-//     lua_pushinteger(L, ev->registered.fflags);
+//     lua_pushinteger(L, ev->reg_evt.fflags);
 //     if (narg > 1) {
 //         int fflags = 0;
 //         if (!lua_isnoneornil(L, 2)) {
@@ -87,7 +87,7 @@
 //             return 3;
 //         }
 
-//         ev->registered.fflags = fflags;
+//         ev->reg_evt.fflags = fflags;
 //     }
 
 //     return 1;
@@ -183,8 +183,8 @@ int poll_raed_new(lua_State *L)
         ev->ref_udata = getrefat(L, 3);
     }
 
-    EV_SET(&ev->registered, fd, EVFILT_READ, ev->registered.flags, 0, 0, ev);
-    if (poll_watch_event(L, ev, 1) != KQ_OK) {
+    EV_SET(&ev->reg_evt, fd, EVFILT_READ, ev->reg_evt.flags, 0, 0, ev);
+    if (poll_watch_event(L, ev, 1) != POLL_OK) {
         lua_pushnil(L);
         lua_pushstring(L, strerror(errno));
         lua_pushinteger(L, errno);
