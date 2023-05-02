@@ -103,7 +103,7 @@ int poll_event_renew_lua(lua_State *L, const char *tname);
 int poll_event_revert_lua(lua_State *L, const char *tname);
 
 poll_event_t *poll_evset_get(lua_State *L, poll_t *p, event_t *evt);
-void poll_evset_del(lua_State *L, poll_t *p, event_t *evt);
+void poll_evset_del(lua_State *L, poll_event_t *ev);
 
 #define POLL_ERROR    -1
 #define POLL_OK       0

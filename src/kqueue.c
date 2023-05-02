@@ -54,7 +54,7 @@ RECONSUME:
     if (evt.flags & EV_ONESHOT) {
         // oneshot event must be removed from the event set table and manually
         // disable event
-        poll_evset_del(L, p, &evt);
+        poll_evset_del(L, ev);
         ev->enabled = 0;
         lua_pushboolean(L, 1);
         return 3;
@@ -86,7 +86,7 @@ static int wait_lua(lua_State *L)
 
         // oneshot event
         if (evt.flags & EV_ONESHOT) {
-            poll_evset_del(L, p, &evt);
+            poll_evset_del(L, ev);
             ev->enabled = 0;
         } else if (evt.flags & EV_ERROR || evt.flags & EV_EOF) {
             if (poll_unwatch_event(L, ev) == POLL_ERROR) {
@@ -182,7 +182,7 @@ static int renew_lua(lua_State *L)
 
         // oneshot event
         if (evt.flags & EV_ONESHOT) {
-            poll_evset_del(L, p, &evt);
+            poll_evset_del(L, ev);
             ev->enabled = 0;
         } else if (poll_unwatch_event(L, ev) == POLL_ERROR) {
             lua_pushboolean(L, 0);

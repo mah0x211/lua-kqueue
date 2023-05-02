@@ -127,32 +127,32 @@ poll_event_t *poll_evset_get(lua_State *L, poll_t *p, event_t *evt)
     return lua_touserdata(L, -1);
 }
 
-static int evset_add(lua_State *L, poll_t *p, event_t *evt, int poll_event_idx)
+static int evset_add(lua_State *L, poll_event_t *ev, int poll_event_idx)
 {
     int ref_evset = LUA_NOREF;
 
     // get event set table reference
-    switch (evt->filter) {
+    switch (ev->reg_evt.filter) {
     case EVFILT_READ:
-        ref_evset = p->ref_evset_read;
+        ref_evset = ev->p->ref_evset_read;
         break;
     case EVFILT_WRITE:
-        ref_evset = p->ref_evset_write;
+        ref_evset = ev->p->ref_evset_write;
         break;
     case EVFILT_SIGNAL:
-        ref_evset = p->ref_evset_signal;
+        ref_evset = ev->p->ref_evset_signal;
         break;
     case EVFILT_TIMER:
-        ref_evset = p->ref_evset_timer;
+        ref_evset = ev->p->ref_evset_timer;
         break;
 
     default:
-        luaL_error(L, "unsupported event filter: %d", evt->filter);
+        luaL_error(L, "unsupported event filter: %d", ev->reg_evt.filter);
     }
 
     // set poll_event_t at the ident index
     pushref(L, ref_evset);
-    lua_rawgeti(L, -1, evt->ident);
+    lua_rawgeti(L, -1, ev->reg_evt.ident);
     if (!lua_isnil(L, -1)) {
         lua_pop(L, 2);
         return POLL_EALREADY;
@@ -160,9 +160,9 @@ static int evset_add(lua_State *L, poll_t *p, event_t *evt, int poll_event_idx)
     lua_pop(L, 1);
     // set poll_event_t at the ident index
     lua_pushvalue(L, poll_event_idx);
-    lua_rawseti(L, -2, evt->ident);
+    lua_rawseti(L, -2, ev->reg_evt.ident);
     // increment registered event counter
-    p->nreg++;
+    ev->p->nreg++;
     lua_pop(L, 1);
     return POLL_OK;
 }
@@ -172,7 +172,7 @@ int poll_watch_event(lua_State *L, poll_event_t *ev, int poll_event_idx)
     event_t evt = ev->reg_evt;
 
     // check event is not already registered
-    if (ev->enabled || evset_add(L, ev->p, &evt, poll_event_idx) != POLL_OK) {
+    if (ev->enabled || evset_add(L, ev, poll_event_idx) != POLL_OK) {
         // return error if already registered
         errno = EEXIST;
         return POLL_EALREADY;
@@ -182,7 +182,7 @@ int poll_watch_event(lua_State *L, poll_event_t *ev, int poll_event_idx)
     evt.flags |= EV_ADD;
     while (kevent(ev->p->fd, &evt, 1, NULL, 0, NULL) == -1) {
         if (errno != EINTR) {
-            poll_evset_del(L, ev->p, &evt);
+            poll_evset_del(L, ev);
             return POLL_ERROR;
         }
     }
@@ -191,34 +191,34 @@ int poll_watch_event(lua_State *L, poll_event_t *ev, int poll_event_idx)
     return POLL_OK;
 }
 
-void poll_evset_del(lua_State *L, poll_t *p, event_t *evt)
+void poll_evset_del(lua_State *L, poll_event_t *ev)
 {
     int ref_evset = LUA_NOREF;
 
     // get event set table reference
-    switch (evt->filter) {
+    switch (ev->reg_evt.filter) {
     case EVFILT_READ:
-        ref_evset = p->ref_evset_read;
+        ref_evset = ev->p->ref_evset_read;
         break;
     case EVFILT_WRITE:
-        ref_evset = p->ref_evset_write;
+        ref_evset = ev->p->ref_evset_write;
         break;
     case EVFILT_SIGNAL:
-        ref_evset = p->ref_evset_signal;
+        ref_evset = ev->p->ref_evset_signal;
         break;
     case EVFILT_TIMER:
-        ref_evset = p->ref_evset_timer;
+        ref_evset = ev->p->ref_evset_timer;
         break;
 
     default:
-        luaL_error(L, "unsupported event filter: %d", evt->filter);
+        luaL_error(L, "unsupported event filter: %d", ev->reg_evt.filter);
     }
 
     // get poll_event_t at the ident index
     pushref(L, ref_evset);
     lua_pushnil(L);
-    lua_rawseti(L, -2, evt->ident);
-    p->nreg--;
+    lua_rawseti(L, -2, ev->reg_evt.ident);
+    ev->p->nreg--;
     lua_pop(L, 1);
 }
 
@@ -238,7 +238,7 @@ int poll_unwatch_event(lua_State *L, poll_event_t *ev)
         }
     }
     ev->enabled = 0;
-    poll_evset_del(L, ev->p, &evt);
+    poll_evset_del(L, ev);
 
     return POLL_OK;
 }
