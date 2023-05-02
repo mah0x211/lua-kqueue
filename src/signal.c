@@ -152,7 +152,7 @@ int poll_signal_new(lua_State *L)
     int signo        = luaL_checkinteger(L, 2);
 
     // check if signal is valid
-    if (sigismember(&ALL_SIGNALS, signo) == 0) {
+    if (sigismember(&ALL_SIGNALS, signo) != 1) {
         errno = EINVAL;
         lua_pushnil(L);
         lua_pushstring(L, strerror(errno));
