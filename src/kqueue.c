@@ -22,6 +22,25 @@
 
 #include "lua_kqueue.h"
 
+static int check_event_status(lua_State *L, poll_event_t *ev)
+{
+    if (ev->reg_evt.flags & EV_ONESHOT) {
+        // oneshot event must be removed from the event set table and manually
+        // disable event
+        poll_evset_del(L, ev);
+        ev->enabled = 0;
+        return EV_ONESHOT;
+    } else if (ev->occ_evt.flags & (EV_EOF | EV_ERROR)) {
+        // event should be disabled when error occurred or EV_EOF is set
+        if (poll_unwatch_event(L, ev) == POLL_ERROR) {
+            return POLL_ERROR;
+        }
+        return EV_EOF;
+    }
+
+    return POLL_OK;
+}
+
 static int consume_lua(lua_State *L)
 {
     poll_t *p   = luaL_checkudata(L, 1, POLL_MT);
@@ -51,26 +70,53 @@ RECONSUME:
     ev->occ_evt = evt;
     pushref(L, ev->ref_udata);
 
-    if (evt.flags & EV_ONESHOT) {
-        // oneshot event must be removed from the event set table and manually
-        // disable event
-        poll_evset_del(L, ev);
-        ev->enabled = 0;
+    // check event status
+    switch (check_event_status(L, ev)) {
+    case POLL_OK:
+        return 2;
+
+    case EV_ONESHOT:
+    case EV_EOF:
         lua_pushboolean(L, 1);
         return 3;
-    } else if (evt.flags & (EV_EOF | EV_ERROR)) {
-        // event should be disabled when error occurred or EV_EOF is set
-        if (poll_unwatch_event(L, ev) == POLL_ERROR) {
-            lua_pushnil(L);
-            lua_pushstring(L, strerror(errno));
-            lua_pushinteger(L, errno);
-            return 3;
-        }
-        lua_pushboolean(L, 1);
+
+    default:
+        lua_pop(L, 2);
+        lua_pushnil(L);
+        lua_pushstring(L, strerror(errno));
+        lua_pushinteger(L, errno);
         return 3;
     }
+}
 
-    return 2;
+static int cleanup_unconsumed_events(lua_State *L, poll_t *p)
+{
+    while (p->cur < p->nevt) {
+        event_t evt      = p->evlist[p->cur++];
+        poll_event_t *ev = poll_evset_get(L, p, &evt);
+
+        if (!ev) {
+            // event is already unwatched
+            continue;
+        }
+        ev->occ_evt = evt;
+
+        switch (check_event_status(L, ev)) {
+        case POLL_OK:
+        case EV_ONESHOT:
+        case EV_EOF:
+            lua_pop(L, 1);
+            continue;
+
+        default:
+            lua_pop(L, 1);
+            return POLL_ERROR;
+        }
+    }
+    p->cur  = 0;
+    p->nevt = 0;
+
+    return POLL_OK;
 }
 
 static int wait_lua(lua_State *L)
@@ -80,31 +126,13 @@ static int wait_lua(lua_State *L)
     lua_Integer msec = luaL_optinteger(L, 2, -1);
 
     // cleanup current events
-    while (p->cur < p->nevt) {
-        event_t evt      = p->evlist[p->cur++];
-        poll_event_t *ev = poll_evset_get(L, p, &evt);
-
-        if (!ev) {
-            // event is already unwatched
-            continue;
-        }
-
-        // oneshot event
-        if (evt.flags & EV_ONESHOT) {
-            poll_evset_del(L, ev);
-            ev->enabled = 0;
-        } else if (evt.flags & EV_ERROR || evt.flags & EV_EOF) {
-            if (poll_unwatch_event(L, ev) == POLL_ERROR) {
-                lua_pushnil(L);
-                lua_pushstring(L, strerror(errno));
-                lua_pushinteger(L, errno);
-                return 3;
-            }
-        }
+    if (cleanup_unconsumed_events(L, p) == POLL_ERROR) {
+        lua_pushnil(L);
+        lua_pushstring(L, strerror(errno));
+        lua_pushinteger(L, errno);
+        return 3;
     }
 
-    p->cur  = 0;
-    p->nevt = 0;
     if (p->nreg == 0) {
         // do not wait the event occurrs if no registered events exists
         lua_pushinteger(L, 0);
@@ -181,28 +209,12 @@ static int renew_lua(lua_State *L)
     poll_t *p = luaL_checkudata(L, 1, POLL_MT);
 
     // cleanup current events before renew
-    while (p->cur < p->nevt) {
-        event_t evt      = p->evlist[p->cur++];
-        poll_event_t *ev = poll_evset_get(L, p, &evt);
-
-        if (!ev) {
-            // event is already unwatched
-            continue;
-        }
-
-        // oneshot event
-        if (evt.flags & EV_ONESHOT) {
-            poll_evset_del(L, ev);
-            ev->enabled = 0;
-        } else if (poll_unwatch_event(L, ev) == POLL_ERROR) {
-            lua_pushboolean(L, 0);
-            lua_pushstring(L, strerror(errno));
-            lua_pushinteger(L, errno);
-            return 3;
-        }
+    if (cleanup_unconsumed_events(L, p) != POLL_OK) {
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, strerror(errno));
+        lua_pushinteger(L, errno);
+        return 3;
     }
-    p->cur  = 0;
-    p->nevt = 0;
 
     int fd = kqueue();
     if (fd == -1) {
