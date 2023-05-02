@@ -174,7 +174,7 @@ int poll_timer_new(lua_State *L)
         ev->ref_udata = getrefat(L, 4);
     }
 
-    EV_SET(&ev->reg_evt, ident, EVFILT_TIMER, ev->reg_evt.flags, 0, msec, ev);
+    EV_SET(&ev->reg_evt, ident, EVFILT_TIMER, ev->reg_evt.flags, 0, msec, NULL);
     if (poll_watch_event(L, ev, 1) != POLL_OK) {
         lua_pushnil(L);
         lua_pushstring(L, strerror(errno));

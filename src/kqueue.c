@@ -82,7 +82,12 @@ static int wait_lua(lua_State *L)
     // cleanup current events
     while (p->cur < p->nevt) {
         event_t evt      = p->evlist[p->cur++];
-        poll_event_t *ev = evt.udata;
+        poll_event_t *ev = poll_evset_get(L, p, &evt);
+
+        if (!ev) {
+            // event is already unwatched
+            continue;
+        }
 
         // oneshot event
         if (evt.flags & EV_ONESHOT) {
@@ -178,7 +183,12 @@ static int renew_lua(lua_State *L)
     // cleanup current events before renew
     while (p->cur < p->nevt) {
         event_t evt      = p->evlist[p->cur++];
-        poll_event_t *ev = evt.udata;
+        poll_event_t *ev = poll_evset_get(L, p, &evt);
+
+        if (!ev) {
+            // event is already unwatched
+            continue;
+        }
 
         // oneshot event
         if (evt.flags & EV_ONESHOT) {

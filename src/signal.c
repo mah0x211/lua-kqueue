@@ -165,7 +165,7 @@ int poll_signal_new(lua_State *L)
         ev->ref_udata = getrefat(L, 3);
     }
 
-    EV_SET(&ev->reg_evt, signo, EVFILT_SIGNAL, ev->reg_evt.flags, 0, 0, ev);
+    EV_SET(&ev->reg_evt, signo, EVFILT_SIGNAL, ev->reg_evt.flags, 0, 0, NULL);
     if (poll_watch_event(L, ev, 1) != POLL_OK) {
         lua_pushnil(L);
         lua_pushstring(L, strerror(errno));
