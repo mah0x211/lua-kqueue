@@ -75,8 +75,8 @@ typedef struct {
     int ref_poll;
     int ref_udata;
     int enabled;
-    event_t registered; // registered event
-    event_t occurred;   // occurred event
+    event_t reg_evt; // registered event
+    event_t occ_evt; // occurred event
 } poll_event_t;
 
 #define POLL_MT        "kqueue"
@@ -103,11 +103,11 @@ int poll_event_renew_lua(lua_State *L, const char *tname);
 int poll_event_revert_lua(lua_State *L, const char *tname);
 
 poll_event_t *poll_evset_get(lua_State *L, poll_t *p, event_t *evt);
-void poll_evset_del(lua_State *L, poll_t *p, event_t *evt);
+void poll_evset_del(lua_State *L, poll_event_t *ev);
 
-#define KQ_ERROR   -1
-#define KQ_OK      0
-#define KQ_ALREADY 1
+#define POLL_ERROR    -1
+#define POLL_OK       0
+#define POLL_EALREADY 1
 
 int poll_watch_event(lua_State *L, poll_event_t *ev, int poll_event_idx);
 int poll_unwatch_event(lua_State *L, poll_event_t *ev);
