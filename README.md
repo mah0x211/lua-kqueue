@@ -22,7 +22,7 @@ it returns `true` if the kqueue is usable.
 - `ok:boolean`: `true` on if the kqueue is usable.
 
 
-## kq, err = kqueue.new()
+## kq, err, errno = kqueue.new()
 
 create a new kqueue instance.
 
@@ -81,7 +81,7 @@ wait for events. it consumes all remaining events before waiting for new events.
 
 **Returns**
 
-- `n:number`: the number of events.
+- `n:number?`: the number of events, or `nil` if error occurred.
 - `err:string`: error string.
 - `errno:number`: error number.
 
@@ -111,7 +111,7 @@ consume the occurred event.
 
 **Returns**
 
-- `ev:kqueue.event`: `kqueue.event` instance.
+- `ev:kqueue.event?`: `kqueue.event` instance, or `nil` if error occurred.
 - `udata:any`: udata will be treated as the following.
     - `any`: the event is occurred and the `udata` is set.
     - `nil`: the event is not occurred.
@@ -236,7 +236,6 @@ register a event that watches the file descriptor until it becomes readable.
 
 this method is change the meta-table of the `ev` to `kqueue.read`.
 
-
 **Parameters**
 
 - `fd:number`: file descriptor.
@@ -244,7 +243,7 @@ this method is change the meta-table of the `ev` to `kqueue.read`.
 
 **Returns**
 
-- `ev:kqueue.read`: `kqueue.read` instance that is changed the meta-table of the `ev`.
+- `ev:kqueue.read?`: `kqueue.read` instance that is changed the meta-table of the `ev`, or `nil` if error occurred.
 - `err:string`: error string.
 - `errno:number`: error number.
 
@@ -292,7 +291,7 @@ this method is change the meta-table of the `ev` to `kqueue.write`.
 
 **Returns**
 
-- `ev:kqueue.write`: `kqueue.write` instance that is changed the meta-table of the `ev`.
+- `ev:kqueue.write?`: `kqueue.write` instance that is changed the meta-table of the `ev`, or `nil` if error occurred.
 - `err:string`: error string.
 - `errno:number`: error number.
 
@@ -339,7 +338,7 @@ this method is change the meta-table of the `ev` to `kqueue.signal`.
 
 **Returns**
 
-- `ev:kqueue.signal`: `kqueue.signal` instance that is changed the meta-table of the `ev`.
+- `ev:kqueue.signal?`: `kqueue.signal` instance that is changed the meta-table of the `ev`, or `nil` if error occurred.
 - `err:string`: error string.
 - `errno:number`: error number.
 
@@ -389,7 +388,7 @@ this method is change the meta-table of the `ev` to `kqueue.timer`.
 
 **Returns**
 
-- `ev:kqueue.timer`: `kqueue.timer` instance that is changed the meta-table of the `ev`.
+- `ev:kqueue.timer?`: `kqueue.timer` instance that is changed the meta-table of the `ev`, or `nil` if error occurred.
 - `err:string`: error string.
 - `errno:number`: error number.
 
