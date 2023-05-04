@@ -464,7 +464,7 @@ revert the event to the `kqueue.event` instance. if the event is enabled then it
 
 **Returns**
 
-- `ev:kqueue.event`: `kqueue.event` instance that is reverted the meta-table of the `ev`.
+- `ev:kqueue.event?`: `kqueue.event` instance that is reverted the meta-table of the `ev`, or `nil` if error occurred.
 - `err:string`: error string.
 - `errno:number`: error number.
 
@@ -540,7 +540,7 @@ return `true` if the event trigger is edge trigger.
 - `ok:boolean`: `true` if the event trigger is edge trigger.
 
 
-## ok = ev:as_edge()
+## ok, err, errno = ev:as_edge()
 
 change the event trigger to edge trigger.
 
@@ -549,6 +549,8 @@ change the event trigger to edge trigger.
 **Returns**
 
 - `ok:boolean`: `true` on success.
+- `err:string`: error string.
+- `errno:number`: error number.
 
 
 ## ok = ev:is_oneshot()
@@ -560,7 +562,7 @@ return `true` if the event type is one-shot event.
 - `ok:boolean`: `true` if the event type is one-shot event.
 
 
-## ok = ev:as_oneshot()
+## ok, err, errno = ev:as_oneshot()
 
 change the event type to one-shot event.
 
@@ -569,6 +571,8 @@ change the event type to one-shot event.
 **Returns**
 
 - `ok:boolean`: `true` on success.
+- `err:string`: error string.
+- `errno:number`: error number.
 
 
 ## ident = ev:ident()
