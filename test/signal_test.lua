@@ -60,10 +60,13 @@ function testcase.watch_unwatch()
         return
     end
     local nevt = assert(kq:wait())
-    -- assert(signal.unblock(signal.SIGUSR2))
     assert.equal(nevt, 1)
     local oev = assert(kq:consume())
     assert.equal(oev, ev)
+
+    -- test that event does not occur when signal is not received
+    nevt = assert(kq:wait(10))
+    assert.equal(nevt, 0)
 
     -- test that return true if event is watched
     ok, err, errnum = ev:unwatch()
