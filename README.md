@@ -443,21 +443,6 @@ rewatch the event. if the `kq` is specified then it rewatch the event with the s
 - `errno:number`: error number.
 
 
-## ok, err, errno = ev:renew( [kq] )
-
-rewatch the event. if the `kq` is specified then it rewatch the event with the specified kqueue instance.
-
-**Parameters**
-
-- `kq:kqueue`: `kqueue` instance.
-
-**Returns**
-
-- `ok:boolean`: `true` on success.
-- `err:string`: error string.
-- `errno:number`: error number.
-
-
 ## ev, err, errno = ev:revert()
 
 revert the event to the `kqueue.event` instance. if the event is enabled then it disable the event.
