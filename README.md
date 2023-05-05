@@ -77,7 +77,7 @@ wait for events. it consumes all remaining events before waiting for new events.
 
 **Parameters**
 
-- `msec:number`: timeout in milliseconds. if the value is `nil` or `<=0` then it waits forever.
+- `msec:number`: timeout in milliseconds. if the value is `nil` or `<0` then it waits forever.
 
 **Returns**
 
@@ -426,21 +426,6 @@ end
 ## Common Methods
 
 the following methods are common methods of the `kqueue.read`, `kqueue.write`, `kqueue.signal` and `kqueue.timer` instances.
-
-
-## ok, err, errno = ev:renew( [kq] )
-
-rewatch the event. if the `kq` is specified then it rewatch the event with the specified kqueue instance.
-
-**Parameters**
-
-- `kq:kqueue`: `kqueue` instance.
-
-**Returns**
-
-- `ok:boolean`: `true` on success.
-- `err:string`: error string.
-- `errno:number`: error number.
 
 
 ## ok, err, errno = ev:renew( [kq] )
