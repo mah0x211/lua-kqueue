@@ -233,9 +233,13 @@ int poll_unwatch_event(lua_State *L, poll_event_t *ev)
     event_t evt = ev->reg_evt;
     evt.flags   = EV_DELETE;
     while (kevent(ev->p->fd, &evt, 1, NULL, 0, NULL) != 0) {
-        if (errno != EINTR) {
-            return POLL_ERROR;
+        if (errno == EINTR) {
+            continue;
+        } else if (errno == EBADF || errno == ENOENT) {
+            // event already deleted
+            break;
         }
+        return POLL_ERROR;
     }
     ev->enabled = 0;
     poll_evset_del(L, ev);
@@ -427,10 +431,10 @@ static int push_event(lua_State *L, event_t evt, int ref_udata)
     lua_setfield(L, -2, "udata");
 
 #define pushinteger(field)                                                     \
- do {                                                                          \
-  lua_pushinteger(L, evt.field);                                               \
-  lua_setfield(L, -2, #field);                                                 \
- } while (0)
+    do {                                                                       \
+        lua_pushinteger(L, evt.field);                                         \
+        lua_setfield(L, -2, #field);                                           \
+    } while (0)
     pushinteger(ident);
     pushinteger(flags);
     pushinteger(fflags);
