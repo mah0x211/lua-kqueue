@@ -48,6 +48,19 @@ function testcase.revert()
     assert.match(ev, '^kqueue%.event: ', false)
 end
 
+function testcase.revert_after_fd_closed()
+    local kq = assert(kqueue.new())
+    local ev = kq:new_event()
+    assert(ev:as_read(TMPFD))
+    assert.match(ev, '^kqueue%.read: ', false)
+
+    -- test that revert event to initial state
+    TMPFILE:close()
+    TMPFILE = nil
+    assert(ev:revert())
+    assert.match(ev, '^kqueue%.event: ', false)
+end
+
 function testcase.watch_unwatch()
     local kq = assert(kqueue.new())
     local ev = kq:new_event()
