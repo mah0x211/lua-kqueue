@@ -77,7 +77,7 @@ wait for events. it consumes all remaining events before waiting for new events.
 
 **Parameters**
 
-- `msec:number`: timeout in milliseconds. if the value is `nil` or `<=0` then it waits forever.
+- `msec:number`: timeout in milliseconds. if the value is `nil` or `<0` then it waits forever.
 
 **Returns**
 

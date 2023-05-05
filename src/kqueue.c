@@ -148,7 +148,7 @@ static int wait_lua(lua_State *L)
     }
 
     int nevt = 0;
-    if (msec <= 0) {
+    if (msec < 0) {
         // wait event forever
         nevt = kevent(p->fd, NULL, 0, p->evlist, p->nreg, NULL);
     } else {
