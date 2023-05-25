@@ -225,9 +225,12 @@ static int renew_lua(lua_State *L)
         return 3;
     }
 
-    // close unused descriptor
-    close(p->fd);
-    p->fd = fd;
+    // NOTE: if the process is forked, the new fd may be the same as the old fd.
+    if (fd != p->fd) {
+        // close unused descriptor
+        close(p->fd);
+        p->fd = fd;
+    }
 
     lua_pushboolean(L, 1);
     return 1;
