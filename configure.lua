@@ -1,4 +1,16 @@
 local VERSION = tonumber(_VERSION:match('Lua (%d+%.%d+)'))
+print(('Lua version: %q'):format(VERSION))
+
+-- extract gcc or clang from CC string
+local COMPILERS = {
+    ['gcc'] = 'gcc',
+    ['clang'] = 'clang',
+}
+local CC = string.gsub(os.getenv('CC') or '', '[^%s]+', function(cc)
+    return COMPILERS[cc] and cc or ''
+end):gsub('%s+', '')
+assert(#CC > 0, 'no compiler found')
+print(('Compiler: %q <- %q'):format(CC, os.getenv('CC')))
 
 local function create_cfile(header, code)
     local cfile = os.tmpname() .. '.c'
@@ -18,7 +30,7 @@ local BUF = io.open(BUFFILE, 'r')
 
 local function exec(cfile)
     local cmd = table.concat({
-        'gcc',
+        CC,
         '-o',
         'a.out',
         cfile,
