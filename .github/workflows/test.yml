@@ -53,7 +53,7 @@ jobs:
         luarocks install io-fileno
         luarocks install errno
         luarocks install signal
-        luarocks install mah0x211/pipe
+        luarocks install os-pipe
     -
       name: Run Test
       run: |
