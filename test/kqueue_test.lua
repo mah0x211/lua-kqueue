@@ -1,7 +1,7 @@
 local testcase = require('testcase')
 local kqueue = require('kqueue')
 local fileno = require('io.fileno')
-local pipe = require('pipe.io')
+local pipe = require('os.pipe.io')
 
 if not kqueue.usable() then
     function testcase.usable()
