@@ -5,28 +5,17 @@
 local configh = require('configh')
 local supported = true
 local cfgh = configh(os.getenv('CC'))
+cfgh:output_status(true)
 for header, funcs in pairs({
     ['sys/event.h'] = {
         'kevent',
     },
 }) do
-    io.stdout:write('check header: ', header, ' ...')
-    local ok, err = cfgh:check_header(header)
-    if not ok then
+    if not cfgh:check_header(header) then
         supported = false
-        print(' not available')
-        print('  >  ' .. string.gsub(err, '\n', '\n  >  '))
     else
-        print(' available')
         for _, func in ipairs(funcs) do
-            io.stdout:write('check function: ', func, ' ...')
-            ok, err = cfgh:check_func(header, func)
-            if not ok then
-                print(' not available')
-                print('  >  ' .. string.gsub(err, '\n', '\n  >  '))
-            else
-                print(' available')
-            end
+            cfgh:check_func(header, func)
         end
     end
 end
