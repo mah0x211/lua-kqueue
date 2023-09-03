@@ -22,6 +22,14 @@ function testcase.before_each()
     TMPFD = fileno(TMPFILE)
 end
 
+function testcase.type()
+    local kq = assert(kqueue.new())
+    local ev = kq:new_event()
+
+    -- test that get the event type
+    assert.equal(ev:type(), 'event')
+end
+
 function testcase.renew()
     local kq1 = assert(kqueue.new())
     local kq2 = assert(kqueue.new())
