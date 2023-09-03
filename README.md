@@ -428,6 +428,20 @@ end
 the following methods are common methods of the `kqueue.read`, `kqueue.write`, `kqueue.signal` and `kqueue.timer` instances.
 
 
+## t = ev:type()
+
+return the event type.
+
+**Returns**
+
+- `t:string`: event type as follows.
+  - `event`: type of the `epoll.event` instance.
+  - `read`: type of the `epoll.read` instance.
+  - `write`: type of the `epoll.write` instance.
+  - `signal`: type of the `epoll.signal` instance.
+  - `timer`: type of the `epoll.timer` instance.
+
+
 ## ok, err, errno = ev:renew( [kq] )
 
 rewatch the event. if the `kq` is specified then it rewatch the event with the specified kqueue instance.

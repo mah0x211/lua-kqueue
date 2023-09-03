@@ -134,6 +134,12 @@ static int renew_lua(lua_State *L)
     return poll_event_renew_lua(L, MODULE_MT);
 }
 
+static int type_lua(lua_State *L)
+{
+    lua_pushliteral(L, "signal");
+    return 1;
+}
+
 static int tostring_lua(lua_State *L)
 {
     return poll_event_tostring_lua(L, MODULE_MT);
@@ -186,6 +192,7 @@ void libopen_poll_signal(lua_State *L)
         {NULL,         NULL        }
     };
     struct luaL_Reg method[] = {
+        {"type",       type_lua      },
         {"renew",      renew_lua     },
         {"revert",     revert_lua    },
         {"watch",      watch_lua     },

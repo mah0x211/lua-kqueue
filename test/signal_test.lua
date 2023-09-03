@@ -10,6 +10,15 @@ if not kqueue.usable() then
     return
 end
 
+function testcase.type()
+    local kq = assert(kqueue.new())
+    local ev = kq:new_event()
+    assert(ev:as_signal(signal.SIGINT))
+
+    -- test that get the event type
+    assert.equal(ev:type(), 'signal')
+end
+
 function testcase.renew()
     local kq1 = assert(kqueue.new())
     local kq2 = assert(kqueue.new())
