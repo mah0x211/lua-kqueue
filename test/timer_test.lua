@@ -9,7 +9,7 @@ end
 function testcase.type()
     local kq = assert(kqueue.new())
     local ev = kq:new_event()
-    assert(ev:as_timer(1, 10))
+    assert(ev:as_timer(1, 0.01))
 
     -- test that get the event type
     assert.equal(ev:type(), 'timer')
@@ -19,7 +19,7 @@ function testcase.renew()
     local kq1 = assert(kqueue.new())
     local kq2 = assert(kqueue.new())
     local ev = kq1:new_event()
-    assert(ev:as_timer(1, 10))
+    assert(ev:as_timer(1, 0.01))
 
     -- test that renew event with other kqueue
     assert(ev:renew(kq2))
@@ -34,7 +34,7 @@ end
 function testcase.revert()
     local kq = assert(kqueue.new())
     local ev = kq:new_event()
-    assert(ev:as_timer(1, 10))
+    assert(ev:as_timer(1, 0.01))
     assert.match(ev, '^kqueue%.timer: ', false)
 
     -- test that revert event to initial state
@@ -45,7 +45,7 @@ end
 function testcase.watch_unwatch()
     local kq = assert(kqueue.new())
     local ev = kq:new_event()
-    assert(ev:as_timer(1, 100))
+    assert(ev:as_timer(1, 0.1))
 
     -- test that return false without error if event is already watched
     local ok, err, errnum = ev:watch()
@@ -60,7 +60,7 @@ function testcase.watch_unwatch()
     assert.equal(oev, ev)
 
     -- test that event not occurs if timer is not expired
-    nevt = assert(kq:wait(5))
+    nevt = assert(kq:wait(0.05))
     assert.equal(nevt, 0)
 
     -- test that return true if event is watched
@@ -85,7 +85,7 @@ end
 function testcase.is_enabled()
     local kq = assert(kqueue.new())
     local ev = kq:new_event()
-    assert(ev:as_timer(1, 10))
+    assert(ev:as_timer(1, 0.01))
 
     -- test that return true if event is enabled
     assert.is_true(ev:is_enabled())
@@ -98,7 +98,7 @@ end
 function testcase.as_level_is_level()
     local kq = assert(kqueue.new())
     local ev = kq:new_event()
-    assert(ev:as_timer(1, 10))
+    assert(ev:as_timer(1, 0.01))
     ev:unwatch()
 
     -- test that remove the oneshot flags
@@ -125,7 +125,7 @@ end
 function testcase.as_edge_is_edge()
     local kq = assert(kqueue.new())
     local ev = kq:new_event()
-    assert(ev:as_timer(1, 10))
+    assert(ev:as_timer(1, 0.01))
     ev:unwatch()
 
     -- test that set the edge flags
@@ -145,7 +145,7 @@ end
 function testcase.as_oneshot_is_oneshot()
     local kq = assert(kqueue.new())
     local ev = kq:new_event()
-    assert(ev:as_timer(1, 10))
+    assert(ev:as_timer(1, 0.01))
     ev:unwatch()
 
     -- test that set the oneshot flags
@@ -165,7 +165,7 @@ end
 function testcase.ident()
     local kq = assert(kqueue.new())
     local ev = kq:new_event()
-    assert(ev:as_timer(1, 10))
+    assert(ev:as_timer(1, 0.01))
 
     -- test that return ident
     assert.equal(ev:ident(), 1)
@@ -181,7 +181,7 @@ end
 function testcase.udata()
     local kq = assert(kqueue.new())
     local ev = kq:new_event()
-    assert(ev:as_timer(1, 10, 'test'))
+    assert(ev:as_timer(1, 0.01, 'test'))
 
     -- test that set udata and return previous udata
     assert.equal(ev:udata(nil), 'test')
@@ -193,7 +193,7 @@ end
 function testcase.getinfo()
     local kq = assert(kqueue.new())
     local ev = kq:new_event()
-    assert(ev:as_timer(1, 10))
+    assert(ev:as_timer(1, 0.01))
 
     -- test that get info of registered event
     assert.is_table(ev:getinfo('registered'))

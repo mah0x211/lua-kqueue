@@ -100,7 +100,7 @@ function testcase.wait()
 
     -- test that return 0 if timeout
     assert(TMPFILE:seek('end'))
-    nevt = assert(kq:wait(10))
+    nevt = assert(kq:wait(0.01))
     assert.equal(nevt, 0)
 
     -- test that event occurred repeatedly as default
@@ -258,7 +258,7 @@ function testcase.edge_triggered_event_will_not_repeat()
     assert.equal(#kq, 1)
 
     -- test that event does not occur repeatedly
-    assert.equal(assert(kq:wait(10)), 0)
+    assert.equal(assert(kq:wait(0.01)), 0)
 
     -- test that event occur if descriptor has changed
     TMPFILE:seek('set', 1)

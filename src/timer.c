@@ -164,10 +164,11 @@ int poll_timer_new(lua_State *L)
 {
     poll_event_t *ev = luaL_checkudata(L, 1, POLL_EVENT_MT);
     int ident        = luaL_checkinteger(L, 2);
-    int msec         = luaL_checkinteger(L, 3);
+    lua_Number sec   = luaL_checknumber(L, 3);
+    int msec         = sec * 1000;
 
-    // check if msec is valid
-    if (msec < 0) {
+    // check argument
+    if (sec < 0) {
         errno = EINVAL;
         lua_pushnil(L);
         lua_pushstring(L, strerror(errno));

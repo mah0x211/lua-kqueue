@@ -121,9 +121,9 @@ static int cleanup_unconsumed_events(lua_State *L, poll_t *p)
 
 static int wait_lua(lua_State *L)
 {
-    poll_t *p        = luaL_checkudata(L, 1, POLL_MT);
+    poll_t *p      = luaL_checkudata(L, 1, POLL_MT);
     // default timeout: -1(never timeout)
-    lua_Integer msec = luaL_optinteger(L, 2, -1);
+    lua_Number sec = luaL_optnumber(L, 2, -1);
 
     // cleanup current events
     if (cleanup_unconsumed_events(L, p) == POLL_ERROR) {
@@ -148,16 +148,16 @@ static int wait_lua(lua_State *L)
     }
 
     int nevt = 0;
-    if (msec < 0) {
+    if (sec < 0) {
         // wait event forever
         nevt = kevent(p->fd, NULL, 0, p->evlist, p->nreg, NULL);
     } else {
         // wait event until timeout occurs
         struct timespec ts = {
-            .tv_sec  = msec / 1000,
-            .tv_nsec = (msec % 1000) * 1000000,
+            .tv_sec = sec,
         };
-        nevt = kevent(p->fd, NULL, 0, p->evlist, p->nreg, &ts);
+        ts.tv_nsec = (sec - (lua_Number)ts.tv_sec) * 1000000000,
+        nevt       = kevent(p->fd, NULL, 0, p->evlist, p->nreg, &ts);
     }
 
     // return number of event
