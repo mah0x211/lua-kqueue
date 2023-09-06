@@ -178,7 +178,7 @@ function testcase.as_timer()
     assert.equal(err, errno.EEXIST.message)
     assert.equal(errnum, errno.EEXIST.code)
 
-    -- test that return error if invalid msec
+    -- test that return error if invalid sec
     assert(ev:revert())
     _, err, errnum = ev:as_timer(123, -1, udata)
     assert.is_nil(_)

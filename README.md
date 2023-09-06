@@ -71,13 +71,13 @@ create a new `kqueue.event` instance.
 - `ev:kqueue.event`: `kqueue.event` instance.
 
 
-## n, err, errno = kq:wait( [msec] )
+## n, err, errno = kq:wait( [sec] )
 
 wait for events. it consumes all remaining events before waiting for new events.
 
 **Parameters**
 
-- `msec:number`: timeout in milliseconds. if the value is `nil` or `<0` then it waits forever.
+- `sec:number`: timeout in seconds. if the value is `nil` or `<0` then it waits forever.
 
 **Returns**
 
@@ -374,7 +374,7 @@ while true do
 end
 ```
 
-## ev, err, errno = ev:as_timer( ident, msec [, udata] )
+## ev, err, errno = ev:as_timer( ident, sec [, udata] )
 
 register a event that watches the timer until it becomes expired.
 
@@ -383,7 +383,7 @@ this method is change the meta-table of the `ev` to `kqueue.timer`.
 **Parameters**
 
 - `ident:number`: timer identifier.
-- `msec:number`: timer interval in milliseconds.
+- `sec:number`: timer interval in seconds.
 - `udata:any`: user data.
 
 **Returns**
@@ -400,7 +400,7 @@ local kq = assert(kqueue.new())
 
 -- register a new event for the timer
 local ev = assert(kq:new_event())
-assert(ev:as_timer(123, 150, 'timer expired after 150 milliseconds'))
+assert(ev:as_timer(123, 0.150, 'timer expired after 150 milliseconds'))
 
 -- wait until the timer is expired
 local n, err, errno = kq:wait()
