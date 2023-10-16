@@ -307,7 +307,7 @@ int poll_event_is_enabled_lua(lua_State *L, const char *tname)
 int poll_event_is_eof_lua(lua_State *L, const char *tname)
 {
     poll_event_t *ev = luaL_checkudata(L, 1, tname);
-    lua_pushboolean(L, ev->occ_evt.flags & EV_EOF);
+    lua_pushboolean(L, ev->occ_evt.flags & (EV_EOF | EV_ERROR));
     return 1;
 }
 

@@ -519,11 +519,11 @@ return `true` if the event is enabled (watching).
 
 ## ok = ev:is_eof()
 
-return `true` if the event is occurred with `EV_EOF` flag.
+return `true` if the event is occurred with `EV_EOF` or `EV_ERROR` flag.
 
 **Returns**
 
-- `ok:boolean`: `true` if the event is occurred with `EV_EOF` flag.
+- `ok:boolean`: `true` if the event is occurred with `EV_EOF` or `EV_ERROR` flag.
 
 
 ## ok = ev:is_level()
