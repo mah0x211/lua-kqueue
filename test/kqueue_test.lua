@@ -144,12 +144,13 @@ function testcase.consume()
 
     -- test that return number of occurred events
     assert.equal(assert(kq:wait()), 1)
-    local oev, ctx, disabled = assert(kq:consume())
+    local oev, ctx, disabled, eof = assert(kq:consume())
     assert.equal(oev, ev)
     assert.equal(ctx, {
         'context',
     })
     assert.is_nil(disabled)
+    assert.is_nil(eof)
 
     -- test that return nil if consumed all events
     oev = kq:consume()
@@ -168,12 +169,13 @@ function testcase.eof_event_will_be_disabled_in_consume()
     -- test that return number of occurred events
     p:closewr()
     assert.equal(assert(kq:wait()), 1)
-    local oev, ctx, disabled = assert(kq:consume())
+    local oev, ctx, disabled, eof = assert(kq:consume())
     assert.equal(oev, ev)
     assert.equal(ctx, {
         'context',
     })
     assert.is_true(disabled)
+    assert.is_true(eof)
     assert.equal(#kq, 0)
     assert.equal(ev:getinfo('occurred'), {
         ident = p.reader:fd(),
@@ -203,12 +205,13 @@ function testcase.oneshot_event_will_be_disabled_in_consume()
 
     -- test that oneshot-trigger event
     assert.equal(assert(kq:wait()), 1)
-    local oev, ctx, disabled = assert(kq:consume())
+    local oev, ctx, disabled, eof = assert(kq:consume())
     assert.equal(oev, ev)
     assert.equal(ctx, {
         'context',
     })
     assert.is_true(disabled)
+    assert.is_nil(eof)
     assert.equal(#kq, 0)
     assert.equal(ev:getinfo('occurred'), {
         ident = TMPFD,
@@ -239,12 +242,13 @@ function testcase.edge_triggered_event_will_not_repeat()
 
     -- test that edge-trigger event
     assert.equal(assert(kq:wait()), 1)
-    local oev, ctx, disabled = assert(kq:consume())
+    local oev, ctx, disabled, eof = assert(kq:consume())
     assert.equal(oev, ev)
     assert.equal(ctx, {
         'context',
     })
     assert.is_nil(disabled)
+    assert.is_nil(eof)
     assert.equal(ev:getinfo('occurred'), {
         ident = TMPFD,
         flags = 0,
