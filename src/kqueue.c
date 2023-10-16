@@ -87,11 +87,11 @@ RECONSUME:
         return 4;
 
     default:
-        lua_pop(L, 2);
-        lua_pushnil(L);
+        lua_pushboolean(L, 1);
+        lua_pushboolean(L, 1);
         lua_pushstring(L, strerror(errno));
         lua_pushinteger(L, errno);
-        return 3;
+        return 6;
     }
 }
 

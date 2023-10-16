@@ -103,15 +103,15 @@ print('n:', n)
 ```
 
 
-## ev, udata|err, disabled|errno, eof = kq:consume()
+## ev, udata, disabled, eof, err, errno = kq:consume()
 
 consume the occurred event.
 
 **NOTE:** 
 
 - if error occurred, the `udata` will be treated as the error message, and the `disabled` will be treated as error number.
-- if it is a one-shot event, or if the event flag is set to `EV_EOF` or `EV_ERROR`, the event is automatically unregistered and `disabled` is set to `true`.
-- if the event flag is set to `EV_EOF` or `EV_ERROR`, the `eof` will be set to `true`.
+- if it is a one-shot event, the event is automatically unregistered and `disabled` is set to `true`.
+- if the event flag is set to `EV_EOF` or `EV_ERROR`, the `disabled` and `eof` are set to `true`.
 
 **Returns**
 
@@ -119,10 +119,6 @@ consume the occurred event.
 - `udata:any`: userdata stored in the event.
 - `disabled:boolean`: `true` if the event has been disabled.
 - `eof:boolean`: `true` if the `EV_EOF` or `EV_ERROR` flag is set.
-
-**Return values on error**
-
-- `ev:nil`: `nil` on error.
 - `err:string`: error message from `strerror(errno)`.
 - `errno:number`: error number `errno`.
 
@@ -144,9 +140,9 @@ end
 
 print('n:', n)
 -- consume the event
-local occurred, udata, errno = kq:consume()
-if errno then
-    print('error:', udata, errno)
+local occurred, udata, disabled, eof, err, errno = kq:consume()
+if err then
+    print('error:', err, errno)
 elseif ocurred then
     print('event occurred:', ocurred, udata)
 end
@@ -276,9 +272,9 @@ print('n:', n)
 
 -- consume the event
 while true do
-    local occurred, udata, errno = kq:consume()
-    if errno then
-        print('error:', udata, errno)
+    local occurred, udata, disabled, eof, err, errno = kq:consume()
+    if err then
+        print('error:', err, errno)
     elseif not occurred then
         break
     end
@@ -324,9 +320,9 @@ print('n:', n)
 
 -- consume the event
 while true do
-    local occurred, udata, errno = kq:consume()
-    if errno then
-        print('error:', udata, errno)
+    local occurred, udata, disabled, eof, err, errno = kq:consume()
+    if err then
+        print('error:', err, errno)
     elseif not occurred then
         break
     end
@@ -373,9 +369,9 @@ print('n:', n)
 
 -- consume the event
 while true do
-    local occurred, udata, errno = kq:consume()
-    if errno then
-        print('error:', udata, errno)
+    local occurred, udata, disabled, eof, err, errno = kq:consume()
+    if err then
+        print('error:', err, errno)
     elseif not occurred then
         break
     end
@@ -421,7 +417,7 @@ print('n:', n)
 
 -- consume the event
 while true do
-    local occurred, udata, errno = kq:consume()
+    local occurred, udata, disabled, eof, err, errno = kq:consume()
     if errno then
         print('error:', udata, errno)
     elseif not occurred then
