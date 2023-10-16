@@ -235,11 +235,11 @@ int poll_unwatch_event(lua_State *L, poll_event_t *ev)
     while (kevent(ev->p->fd, &evt, 1, NULL, 0, NULL) != 0) {
         if (errno == EINTR) {
             continue;
-        } else if (errno == EBADF || errno == ENOENT) {
-            // event already deleted
-            break;
+        } else if (errno == ENOMEM) {
+            return POLL_ERROR;
         }
-        return POLL_ERROR;
+        // probably event is already deleted
+        break;
     }
     ev->enabled = 0;
     poll_evset_del(L, ev);
