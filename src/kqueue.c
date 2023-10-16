@@ -29,6 +29,9 @@ static int check_event_status(lua_State *L, poll_event_t *ev)
         // disable event
         poll_evset_del(L, ev);
         ev->enabled = 0;
+        if (ev->occ_evt.flags & (EV_EOF | EV_ERROR)) {
+            return EV_EOF;
+        }
         return EV_ONESHOT;
     } else if (ev->occ_evt.flags & (EV_EOF | EV_ERROR)) {
         // event should be disabled when error occurred or EV_EOF is set
@@ -76,9 +79,12 @@ RECONSUME:
         return 2;
 
     case EV_ONESHOT:
-    case EV_EOF:
         lua_pushboolean(L, 1);
         return 3;
+    case EV_EOF:
+        lua_pushboolean(L, 1);
+        lua_pushboolean(L, 1);
+        return 4;
 
     default:
         lua_pop(L, 2);
