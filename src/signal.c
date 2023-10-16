@@ -109,6 +109,11 @@ static int is_level_lua(lua_State *L)
     return poll_event_is_level_lua(L, MODULE_MT);
 }
 
+static int is_eof_lua(lua_State *L)
+{
+    return poll_event_is_eof_lua(L, MODULE_MT);
+}
+
 static int is_enabled_lua(lua_State *L)
 {
     return poll_event_is_enabled_lua(L, MODULE_MT);
@@ -198,6 +203,7 @@ void libopen_poll_signal(lua_State *L)
         {"watch",      watch_lua     },
         {"unwatch",    unwatch_lua   },
         {"is_enabled", is_enabled_lua},
+        {"is_eof",     is_eof_lua    },
         {"is_level",   is_level_lua  },
         {"as_level",   as_level_lua  },
         {"is_edge",    is_edge_lua   },
