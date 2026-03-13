@@ -83,19 +83,20 @@ void libopen_poll_event(lua_State *L)
         {NULL,         NULL        }
     };
     struct luaL_Reg method[] = {
-        {"type",       type_lua       },
-        {"renew",      renew_lua      },
-        {"is_level",   is_level_lua   },
-        {"as_level",   as_level_lua   },
-        {"is_edge",    is_edge_lua    },
-        {"as_edge",    as_edge_lua    },
-        {"is_oneshot", is_oneshot_lua },
-        {"as_oneshot", as_oneshot_lua },
-        {"as_read",    poll_raed_new  },
-        {"as_write",   poll_write_new },
-        {"as_signal",  poll_signal_new},
-        {"as_timer",   poll_timer_new },
-        {NULL,         NULL           }
+        {"type",       type_lua        },
+        {"renew",      renew_lua       },
+        {"is_level",   is_level_lua    },
+        {"as_level",   as_level_lua    },
+        {"is_edge",    is_edge_lua     },
+        {"as_edge",    as_edge_lua     },
+        {"is_oneshot", is_oneshot_lua  },
+        {"as_oneshot", as_oneshot_lua  },
+        {"as_read",    poll_raed_new   },
+        {"as_write",   poll_write_new  },
+        {"as_signal",  poll_signal_new },
+        {"as_timer",   poll_timer_new  },
+        {"as_trigger", poll_trigger_new},
+        {NULL,         NULL            }
     };
 
     // create metatable

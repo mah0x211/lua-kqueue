@@ -24,6 +24,16 @@
 
 static int check_event_status(lua_State *L, poll_event_t *ev)
 {
+    // trigger events require pipe drain / counter update before any early
+    // return, including EV_ONESHOT, so that the pipe and counter stay in sync
+    if (ev->type == POLL_EVENT_TRIGGER && poll_trigger_consume(ev) == -1) {
+        // pipe read failed permanently; treat as EOF and unwatch
+        if (poll_unwatch_event(L, ev) == POLL_ERROR) {
+            return POLL_ERROR;
+        }
+        return EV_EOF;
+    }
+
     if (ev->reg_evt.flags & EV_ONESHOT) {
         // oneshot event must be removed from the event set table and manually
         // disable event
@@ -338,6 +348,7 @@ LUALIB_API int luaopen_kqueue(lua_State *L)
     libopen_poll_write(L);
     libopen_poll_signal(L);
     libopen_poll_timer(L);
+    libopen_poll_trigger(L);
 
     // create metatable
     luaL_newmetatable(L, POLL_MT);

@@ -21,10 +21,17 @@
  */
 
 #include "lua_kqueue.h"
+#include <sys/mman.h>
 
 int poll_event_gc_lua(lua_State *L)
 {
     poll_event_t *ev = lua_touserdata(L, 1);
+    if (ev->type == POLL_EVENT_TRIGGER) {
+        // close pipe fds and free shared counter
+        close(ev->trigger.write_fd);
+        munmap(ev->trigger.counter, sizeof(uint64_t));
+        close((int)ev->reg_evt.ident);
+    }
     unref(L, ev->ref_poll);
     unref(L, ev->ref_udata);
     return 0;
@@ -82,6 +89,13 @@ int poll_event_revert_lua(lua_State *L, const char *tname)
         lua_pushinteger(L, errno);
         return 3;
     }
+    // close pipe fds and free shared counter for trigger events
+    if (ev->type == POLL_EVENT_TRIGGER) {
+        close(ev->trigger.write_fd);
+        munmap(ev->trigger.counter, sizeof(uint64_t));
+        close((int)ev->reg_evt.ident);
+        ev->trigger = (poll_event_trigger_t){0};
+    }
     ev->reg_evt   = (event_t){0};
     ev->occ_evt   = (event_t){0};
     ev->type      = POLL_EVENT_NONE;
@@ -100,7 +114,15 @@ poll_event_t *poll_evset_get(lua_State *L, poll_t *p, event_t *evt)
     // get event set table reference
     switch (evt->filter) {
     case EVFILT_READ:
-        ref_evset = p->ref_evset_read;
+        // search read evset first; trigger also uses EVFILT_READ
+        pushref(L, p->ref_evset_read);
+        lua_rawgeti(L, -1, evt->ident);
+        if (!lua_isnil(L, -1)) {
+            lua_replace(L, -2);
+            return lua_touserdata(L, -1);
+        }
+        lua_pop(L, 2);
+        ref_evset = p->ref_evset_trigger;
         break;
     case EVFILT_WRITE:
         ref_evset = p->ref_evset_write;
