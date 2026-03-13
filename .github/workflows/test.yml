@@ -1,6 +1,10 @@
 name: test
 
-on: [push]
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
 
 jobs:
   test:
@@ -8,13 +12,13 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macos-11
+          - macos-latest
         lua-version:
-          - "5.1"
-          - "5.2"
-          - "5.3"
-          - "5.4"
-          - "luajit-2.0.5"
+          - "5.1.:latest"
+          - "5.2.:latest"
+          - "5.3.:latest"
+          - "5.4.:latest"
+          - "lj-v2.1:latest"
 
     runs-on: ${{ matrix.os }}
 
@@ -26,17 +30,16 @@ jobs:
         submodules: 'true'
     -
       name: Setup Lua ${{ matrix.lua-version }}
-      uses: leafo/gh-actions-lua@v8
+      uses: mah0x211/setup-lua@v1
       with:
-        luaVersion: ${{ matrix.lua-version }}
-    -
-      name: Setup Luarocks
-      uses: leafo/gh-actions-luarocks@v4
+        versions: ${{ matrix.lua-version }}
     -
       name: Install dependencies for macOS
-      if: matrix.os == 'macos-11'
+      if: matrix.os == 'macos-latest'
       run: |
-        brew install lcov
+        brew install lcov pcre2
+        BREW_PREFIX=$(brew --prefix)
+        echo "PKG_CONFIG_PATH=${BREW_PREFIX}/lib/pkgconfig:${BREW_PREFIX}/share/pkgconfig" >> "$GITHUB_ENV"
     -
       name: Install dependencies for Ubuntu
       if: matrix.os == 'ubuntu-latest'
@@ -45,7 +48,7 @@ jobs:
     -
       name: Install
       run: |
-        luarocks make KQUEUE_COVERAGE=1
+        KQUEUE_COVERAGE=1 luarocks make
     -
       name: Install Tools
       run: |
