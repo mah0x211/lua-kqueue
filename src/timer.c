@@ -187,6 +187,7 @@ int poll_timer_new(lua_State *L)
     }
 
     EV_SET(&ev->reg_evt, ident, EVFILT_TIMER, ev->reg_evt.flags, 0, msec, NULL);
+    ev->type = POLL_EVENT_TIMER;
     if (poll_watch_event(L, ev, 1) != POLL_OK) {
         lua_pushnil(L);
         lua_pushstring(L, strerror(errno));

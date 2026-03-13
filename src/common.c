@@ -84,6 +84,7 @@ int poll_event_revert_lua(lua_State *L, const char *tname)
     }
     ev->reg_evt   = (event_t){0};
     ev->occ_evt   = (event_t){0};
+    ev->type      = POLL_EVENT_NONE;
     ev->ref_udata = unref(L, ev->ref_udata);
     lua_settop(L, 1);
     luaL_getmetatable(L, POLL_EVENT_MT);
@@ -132,22 +133,25 @@ static int evset_add(lua_State *L, poll_event_t *ev, int poll_event_idx)
     int ref_evset = LUA_NOREF;
 
     // get event set table reference
-    switch (ev->reg_evt.filter) {
-    case EVFILT_READ:
+    switch (ev->type) {
+    case POLL_EVENT_READ:
         ref_evset = ev->p->ref_evset_read;
         break;
-    case EVFILT_WRITE:
+    case POLL_EVENT_WRITE:
         ref_evset = ev->p->ref_evset_write;
         break;
-    case EVFILT_SIGNAL:
+    case POLL_EVENT_SIGNAL:
         ref_evset = ev->p->ref_evset_signal;
         break;
-    case EVFILT_TIMER:
+    case POLL_EVENT_TIMER:
         ref_evset = ev->p->ref_evset_timer;
+        break;
+    case POLL_EVENT_TRIGGER:
+        ref_evset = ev->p->ref_evset_trigger;
         break;
 
     default:
-        luaL_error(L, "unsupported event filter: %d", ev->reg_evt.filter);
+        luaL_error(L, "unsupported event type: %d", ev->type);
     }
 
     // set poll_event_t at the ident index
@@ -196,22 +200,25 @@ void poll_evset_del(lua_State *L, poll_event_t *ev)
     int ref_evset = LUA_NOREF;
 
     // get event set table reference
-    switch (ev->reg_evt.filter) {
-    case EVFILT_READ:
+    switch (ev->type) {
+    case POLL_EVENT_READ:
         ref_evset = ev->p->ref_evset_read;
         break;
-    case EVFILT_WRITE:
+    case POLL_EVENT_WRITE:
         ref_evset = ev->p->ref_evset_write;
         break;
-    case EVFILT_SIGNAL:
+    case POLL_EVENT_SIGNAL:
         ref_evset = ev->p->ref_evset_signal;
         break;
-    case EVFILT_TIMER:
+    case POLL_EVENT_TIMER:
         ref_evset = ev->p->ref_evset_timer;
+        break;
+    case POLL_EVENT_TRIGGER:
+        ref_evset = ev->p->ref_evset_trigger;
         break;
 
     default:
-        luaL_error(L, "unsupported event filter: %d", ev->reg_evt.filter);
+        luaL_error(L, "unsupported event type: %d", ev->type);
     }
 
     // get poll_event_t at the ident index

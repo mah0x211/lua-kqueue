@@ -200,8 +200,10 @@ static int new_event_lua(lua_State *L)
         .p         = p,
         .ref_poll  = getrefat(L, 1),
         .ref_udata = LUA_NOREF,
+        .type      = POLL_EVENT_NONE,
         .reg_evt   = (event_t){0},
         .occ_evt   = (event_t){0},
+        .trigger   = {0},
     };
     // set metatable
     luaL_getmetatable(L, POLL_EVENT_MT);
@@ -264,6 +266,7 @@ static int gc_lua(lua_State *L)
     unref(L, p->ref_evset_write);
     unref(L, p->ref_evset_signal);
     unref(L, p->ref_evset_timer);
+    unref(L, p->ref_evset_trigger);
     unref(L, p->ref_evlist);
 
     return 0;
@@ -275,12 +278,13 @@ static int new_lua(lua_State *L)
 
     *p = (poll_t){
         // create poll descriptor
-        .fd               = kqueue(),
-        .ref_evset_read   = LUA_NOREF,
-        .ref_evset_write  = LUA_NOREF,
-        .ref_evset_signal = LUA_NOREF,
-        .ref_evset_timer  = LUA_NOREF,
-        .ref_evlist       = LUA_NOREF,
+        .fd                = kqueue(),
+        .ref_evset_read    = LUA_NOREF,
+        .ref_evset_write   = LUA_NOREF,
+        .ref_evset_signal  = LUA_NOREF,
+        .ref_evset_timer   = LUA_NOREF,
+        .ref_evset_trigger = LUA_NOREF,
+        .ref_evlist        = LUA_NOREF,
     };
     if (p->fd == -1) {
         // got error
@@ -301,6 +305,8 @@ static int new_lua(lua_State *L)
     p->ref_evset_signal = getref(L);
     lua_newtable(L);
     p->ref_evset_timer = getref(L);
+    lua_newtable(L);
+    p->ref_evset_trigger = getref(L);
 
     return 1;
 }

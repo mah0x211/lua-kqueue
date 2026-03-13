@@ -26,6 +26,7 @@
 #include "config.h"
 #include <errno.h>
 #include <signal.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/event.h>
 #include <unistd.h>
@@ -56,12 +57,28 @@ static inline void pushref(lua_State *L, int ref)
 
 typedef struct kevent event_t;
 
+typedef enum {
+    POLL_EVENT_NONE = 0,
+    POLL_EVENT_READ,
+    POLL_EVENT_WRITE,
+    POLL_EVENT_SIGNAL,
+    POLL_EVENT_TIMER,
+    POLL_EVENT_TRIGGER,
+} poll_event_type_t;
+
+typedef struct {
+    int write_fd;
+    uint64_t *counter;
+    int semaphore;
+} poll_event_trigger_t;
+
 typedef struct {
     int fd;
     int ref_evset_read;
     int ref_evset_write;
     int ref_evset_signal;
     int ref_evset_timer;
+    int ref_evset_trigger;
     int ref_evlist;
     int nreg;
     int nevt;
@@ -75,16 +92,19 @@ typedef struct {
     int ref_poll;
     int ref_udata;
     int enabled;
+    poll_event_type_t type;
     event_t reg_evt; // registered event
     event_t occ_evt; // occurred event
+    poll_event_trigger_t trigger;
 } poll_event_t;
 
-#define POLL_MT        "kqueue"
-#define POLL_EVENT_MT  "kqueue.event"
-#define POLL_READ_MT   "kqueue.read"
-#define POLL_WRITE_MT  "kqueue.write"
-#define POLL_SIGNAL_MT "kqueue.signal"
-#define POLL_TIMER_MT  "kqueue.timer"
+#define POLL_MT         "kqueue"
+#define POLL_EVENT_MT   "kqueue.event"
+#define POLL_READ_MT    "kqueue.read"
+#define POLL_WRITE_MT   "kqueue.write"
+#define POLL_SIGNAL_MT  "kqueue.signal"
+#define POLL_TIMER_MT   "kqueue.timer"
+#define POLL_TRIGGER_MT "kqueue.trigger"
 
 void libopen_poll_event(lua_State *L);
 void libopen_poll_read(lua_State *L);
