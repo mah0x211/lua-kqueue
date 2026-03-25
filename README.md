@@ -428,9 +428,65 @@ end
 ```
 
 
+## ev, err, errno = ev:as_trigger( [semaphore [, udata]] )
+
+register an event that can be triggered manually from Lua or from a forked child process. the trigger uses an internal pipe and a shared memory counter.
+
+this method changes the meta-table of `ev` to `kqueue.trigger` and immediately registers the event with the kqueue instance.
+
+**Parameters**
+
+- `semaphore:boolean`: if `true`, each call to `ev:trigger()` increments a counter and each `kq:consume()` decrements it by one (semaphore semantics). if `false` or omitted, multiple triggers are coalesced and a single consume resets the counter to zero (counter semantics).
+- `udata:any`: user data.
+
+**Returns**
+
+- `ev:kqueue.trigger?`: `kqueue.trigger` instance, or `nil` if error occurred.
+- `err:string`: error string.
+- `errno:number`: error number.
+
+**NOTE:** when using edge-triggered mode (`ev:as_edge()`) with semaphore semantics, the event fires only once per transition from not-ready to ready. if the counter is still greater than zero after a consume, the event will not re-fire until `ev:trigger()` is called again. this matches the behavior of Linux `eventfd` with `EPOLLET | EFD_SEMAPHORE`.
+
+**Example**
+
+```lua
+local kqueue = require('kqueue')
+local kq = assert(kqueue.new())
+
+-- register a trigger event with semaphore semantics
+local ev = assert(kq:new_event())
+assert(ev:as_trigger(true, 'trigger data'))
+
+-- fire the trigger three times
+assert(ev:trigger())
+assert(ev:trigger())
+assert(ev:trigger())
+
+-- each consume decrements the counter by one
+for i = 1, 3 do
+    local n = assert(kq:wait())
+    assert(kq:consume())
+    print('consumed:', i)
+end
+```
+
+
+## ok, err, errno = ev:trigger()
+
+fire the trigger event. if the internal counter was zero before this call, a byte is written to the internal pipe to wake up the kqueue. otherwise only the counter is incremented.
+
+**NOTE:** returns an error if the trigger event is not currently being watched.
+
+**Returns**
+
+- `ok:boolean`: `true` on success.
+- `err:string`: error string.
+- `errno:number`: error number.
+
+
 ## Common Methods
 
-the following methods are common methods of the `kqueue.read`, `kqueue.write`, `kqueue.signal` and `kqueue.timer` instances.
+the following methods are common methods of the `kqueue.read`, `kqueue.write`, `kqueue.signal`, `kqueue.timer` and `kqueue.trigger` instances.
 
 
 ## t = ev:type()
@@ -440,11 +496,12 @@ return the event type.
 **Returns**
 
 - `t:string`: event type as follows.
-  - `event`: type of the `epoll.event` instance.
-  - `read`: type of the `epoll.read` instance.
-  - `write`: type of the `epoll.write` instance.
-  - `signal`: type of the `epoll.signal` instance.
-  - `timer`: type of the `epoll.timer` instance.
+  - `event`: type of the `kqueue.event` instance.
+  - `read`: type of the `kqueue.read` instance.
+  - `write`: type of the `kqueue.write` instance.
+  - `signal`: type of the `kqueue.signal` instance.
+  - `timer`: type of the `kqueue.timer` instance.
+  - `trigger`: type of the `kqueue.trigger` instance.
 
 
 ## ok, err, errno = ev:renew( [kq] )
@@ -483,6 +540,7 @@ watch the event.
 - `kqueue.write`: file descriptor used as the identifier.
 - `kqueue.signal`: signal number used as the identifier.
 - `kqueue.timer`: timer identifier used as the identifier.
+- `kqueue.trigger`: internal pipe read file descriptor used as the identifier.
 
 **Returns**
 
