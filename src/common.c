@@ -322,8 +322,6 @@ int poll_event_unwatch_lua(lua_State *L, const char *tname)
         lua_pushinteger(L, errno);
         return 3;
     }
-    lua_pushboolean(L, 1);
-    return 1;
 }
 
 int poll_event_is_enabled_lua(lua_State *L, const char *tname)

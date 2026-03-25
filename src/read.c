@@ -203,7 +203,6 @@ int poll_read_new(lua_State *L)
         return 3;
     }
     lua_settop(L, 1);
-    lua_pushvalue(L, 1);
     luaL_getmetatable(L, MODULE_MT);
     lua_setmetatable(L, -2);
     return 1;
