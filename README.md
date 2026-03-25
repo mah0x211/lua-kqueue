@@ -143,8 +143,8 @@ print('n:', n)
 local occurred, udata, disabled, eof, err, errno = kq:consume()
 if err then
     print('error:', err, errno)
-elseif ocurred then
-    print('event occurred:', ocurred, udata)
+elseif occurred then
+    print('event occurred:', occurred, udata)
 end
 ```
 
@@ -237,7 +237,7 @@ change the event type to one-shot event.
 
 ## ev, err, errno = ev:as_read( fd [, udata] )
 
-register a event that watches the file descriptor until it becomes readable.
+register an event that watches the file descriptor until it becomes readable.
 
 this method is change the meta-table of the `ev` to `kqueue.read`.
 
@@ -285,7 +285,7 @@ end
 
 ## ev, err, errno = ev:as_write( fd [, udata] )
 
-register a event that watches the file descriptor until it becomes writable.
+register an event that watches the file descriptor until it becomes writable.
 
 this method is change the meta-table of the `ev` to `kqueue.write`.
 
@@ -332,7 +332,7 @@ end
 
 ## ev, err, errno = ev:as_signal( signo [, udata] )
 
-register a event that watches the signal until it becomes occurred.
+register an event that watches the signal until it is raised.
 
 this method is change the meta-table of the `ev` to `kqueue.signal`.
 
@@ -358,7 +358,7 @@ local kq = assert(kqueue.new())
 local ev = assert(kq:new_event())
 assert(ev:as_signal(signal.SIGINT, 'SIGINT occurred'))
 
--- wait until SIGINT is occurred
+-- wait until SIGINT is raised
 signal.block(signal.SIGINT)
 local n, err, errno = kq:wait()
 if err then
@@ -381,7 +381,7 @@ end
 
 ## ev, err, errno = ev:as_timer( ident, sec [, udata] )
 
-register a event that watches the timer until it becomes expired.
+register an event that watches the timer until it expires.
 
 this method is change the meta-table of the `ev` to `kqueue.timer`.
 
@@ -573,11 +573,11 @@ return `true` if the event is enabled (watching).
 
 ## ok = ev:is_eof()
 
-return `true` if the event is occurred with `EV_EOF` or `EV_ERROR` flag.
+return `true` if the event occurred with `EV_EOF` or `EV_ERROR` flag.
 
 **Returns**
 
-- `ok:boolean`: `true` if the event is occurred with `EV_EOF` or `EV_ERROR` flag.
+- `ok:boolean`: `true` if the event occurred with `EV_EOF` or `EV_ERROR` flag.
 
 
 ## ok = ev:is_level()
@@ -676,7 +676,7 @@ get the information of the specified event.
 
 - `event:string`: event name as follows.
   - `registered`: return the information of the event that is registered.
-  - `occurred`: return the information of the event that is occurred.
+  - `occurred`: return the information of the event that occurred.
   
 **Returns**
 

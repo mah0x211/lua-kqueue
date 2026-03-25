@@ -91,7 +91,7 @@ void libopen_poll_event(lua_State *L)
         {"as_edge",    as_edge_lua     },
         {"is_oneshot", is_oneshot_lua  },
         {"as_oneshot", as_oneshot_lua  },
-        {"as_read",    poll_raed_new   },
+        {"as_read",    poll_read_new   },
         {"as_write",   poll_write_new  },
         {"as_signal",  poll_signal_new },
         {"as_timer",   poll_timer_new  },

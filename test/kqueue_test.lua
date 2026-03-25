@@ -1,4 +1,5 @@
 local testcase = require('testcase')
+local assert = require('assert')
 local kqueue = require('kqueue')
 local fileno = require('io.fileno')
 local pipe = require('os.pipe.io')
@@ -133,6 +134,40 @@ function testcase.unconsumed_events_will_be_consumed_in_wait()
     assert.is_false(ev2:is_enabled())
 end
 
+function testcase.consume_skips_unwatched_events()
+    local kq = assert(kqueue.new())
+    local p = assert(pipe())
+    local ev = kq:new_event()
+    assert(p:write('test'))
+    assert(ev:as_read(p.reader:fd()))
+
+    -- capture event in evlist
+    local nevt = assert(kq:wait())
+    assert.equal(nevt, 1)
+
+    -- unwatch before consuming: poll_evset_get returns nil -> RECONSUME -> nil
+    assert(ev:unwatch())
+    local oev = kq:consume()
+    assert.is_nil(oev)
+end
+
+function testcase.cleanup_skips_unwatched_events()
+    local kq = assert(kqueue.new())
+    local p = assert(pipe())
+    local ev = kq:new_event()
+    assert(p:write('test'))
+    assert(ev:as_read(p.reader:fd()))
+
+    -- capture event in evlist without consuming
+    local nevt = assert(kq:wait())
+    assert.equal(nevt, 1)
+
+    -- unwatch before next wait: cleanup silently skips the orphaned event
+    assert(ev:unwatch())
+    nevt = assert(kq:wait(0))
+    assert.equal(nevt, 0)
+end
+
 function testcase.consume()
     local kq = assert(kqueue.new())
     local ev = kq:new_event()
@@ -232,7 +267,7 @@ function testcase.oneshot_event_will_be_disabled_in_consume()
         },
     })
 
-    -- test that onshot-event will be deleted after event occurred
+    -- test that oneshot-event will be deleted after event occurred
     assert.equal(#kq, 0)
     TMPFILE:seek('set', 1)
     assert.equal(assert(kq:wait(10)), 0)

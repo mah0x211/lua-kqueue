@@ -1,4 +1,5 @@
 local testcase = require('testcase')
+local assert = require('assert')
 local kqueue = require('kqueue')
 local fileno = require('io.fileno')
 local errno = require('errno')
@@ -73,8 +74,9 @@ function testcase.watch_unwatch()
     assert.equal(nevt, 1)
     local oev = assert(kq:consume())
     assert.equal(oev, ev)
+    assert.is_false(oev:is_eof())
 
-    -- test that return true if event is watched
+    -- test that return true if event is unwatched
     ok, err, errnum = ev:unwatch()
     assert.is_true(ok)
     assert.is_nil(err)
@@ -187,8 +189,11 @@ function testcase.udata()
     local ev = kq:new_event()
     assert(ev:as_write(TMPFD, 'test'))
 
-    -- test that set udata and return previous udata
-    assert.equal(ev:udata(nil), 'test')
+    -- test that set udata to a new non-nil value and return previous udata
+    assert.equal(ev:udata('newval'), 'test')
+
+    -- test that set udata to nil and return previous udata
+    assert.equal(ev:udata(nil), 'newval')
 
     -- test that return nil
     assert.is_nil(ev:udata())

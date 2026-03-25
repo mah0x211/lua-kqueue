@@ -2,3 +2,5 @@ coverage/
 *.o
 *.gcno
 *.gcda
+*.profraw
+src/config.h

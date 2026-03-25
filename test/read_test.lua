@@ -89,7 +89,7 @@ function testcase.watch_unwatch()
     local oev = assert(kq:consume())
     assert.equal(oev, ev)
 
-    -- test that return true if event is watched
+    -- test that return true if event is unwatched
     ok, err, errnum = ev:unwatch()
     assert.is_true(ok)
     assert.is_nil(err)
@@ -202,7 +202,7 @@ function testcase.udata()
     local ev = kq:new_event()
     assert(ev:as_read(TMPFD, 'test'))
 
-    -- test that set udata and return previous udata
+    -- test that set udata to nil and return previous udata
     assert.equal(ev:udata(nil), 'test')
 
     -- test that return nil

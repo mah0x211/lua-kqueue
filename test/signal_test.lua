@@ -1,4 +1,5 @@
 local testcase = require('testcase')
+local assert = require('assert')
 local fork = require('testcase.fork')
 local sleep = require('testcase.timer').sleep
 local getpid = require('testcase.getpid')
@@ -72,12 +73,13 @@ function testcase.watch_unwatch()
     assert.equal(nevt, 1)
     local oev = assert(kq:consume())
     assert.equal(oev, ev)
+    assert.is_false(oev:is_eof())
 
     -- test that event does not occur when signal is not received
     nevt = assert(kq:wait(0.01))
     assert.equal(nevt, 0)
 
-    -- test that return true if event is watched
+    -- test that return true if event is unwatched
     ok, err, errnum = ev:unwatch()
     assert.is_true(ok)
     assert.is_nil(err)
@@ -197,7 +199,7 @@ function testcase.udata()
     local ev = kq:new_event()
     assert(ev:as_signal(signal.SIGINT, 'test'))
 
-    -- test that set udata and return previous udata
+    -- test that set udata to nil and return previous udata
     assert.equal(ev:udata(nil), 'test')
 
     -- test that return nil

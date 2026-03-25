@@ -69,8 +69,8 @@ RECONSUME:
 
     evt = p->evlist[p->cur++];
     if (p->cur >= p->nevt) {
-        // free event list if all events are consumed
-        p->nevt = 0;
+        // all events consumed; reset cursor
+        p->cur = p->nevt = 0;
     }
 
     // NOTE: if poll_evset_get() returns a poll_event_t instance, it is placed
@@ -150,7 +150,7 @@ static int wait_lua(lua_State *L)
     }
 
     if (p->nreg == 0) {
-        // do not wait the event occurrs if no registered events exists
+        // do not wait for events if no registered events exist
         lua_pushinteger(L, 0);
         return 1;
     }

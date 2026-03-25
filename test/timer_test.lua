@@ -1,4 +1,5 @@
 local testcase = require('testcase')
+local assert = require('assert')
 local kqueue = require('kqueue')
 local errno = require('errno')
 
@@ -58,12 +59,13 @@ function testcase.watch_unwatch()
     assert.equal(nevt, 1)
     local oev = assert(kq:consume())
     assert.equal(oev, ev)
+    assert.is_false(oev:is_eof())
 
     -- test that event not occurs if timer is not expired
     nevt = assert(kq:wait(0.001))
     assert.equal(nevt, 0)
 
-    -- test that return true if event is watched
+    -- test that return true if event is unwatched
     ok, err, errnum = ev:unwatch()
     assert.is_true(ok)
     assert.is_nil(err)
@@ -170,7 +172,7 @@ function testcase.ident()
     -- test that return ident
     assert.equal(ev:ident(), 1)
 
-    -- test that return error if signal is invalid
+    -- test that return error if timeout is invalid
     assert(ev:revert())
     local _, err, errnum = ev:as_timer(1, -10)
     assert.is_nil(_)
@@ -183,7 +185,7 @@ function testcase.udata()
     local ev = kq:new_event()
     assert(ev:as_timer(1, 0.01, 'test'))
 
-    -- test that set udata and return previous udata
+    -- test that set udata to nil and return previous udata
     assert.equal(ev:udata(nil), 'test')
 
     -- test that return nil
