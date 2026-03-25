@@ -169,7 +169,7 @@ function testcase.udata()
     local ev = kq:new_event()
     assert(ev:as_trigger(false, 'mydata'))
 
-    -- test that set udata and return previous udata
+    -- test that set udata to nil and return previous udata
     assert.equal(ev:udata(nil), 'mydata')
 
     -- test that return nil
@@ -206,6 +206,7 @@ function testcase.trigger_counter_mode()
     local oev, udata = assert(kq:consume())
     assert.equal(oev, ev)
     assert.equal(udata, 'ctx')
+    assert.is_false(oev:is_eof())
 
     -- test that event does not fire after consume
     nevt = assert(kq:wait(0))
