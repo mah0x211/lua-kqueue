@@ -232,7 +232,7 @@ function testcase.oneshot_event_will_be_disabled_in_consume()
         },
     })
 
-    -- test that onshot-event will be deleted after event occurred
+    -- test that oneshot-event will be deleted after event occurred
     assert.equal(#kq, 0)
     TMPFILE:seek('set', 1)
     assert.equal(assert(kq:wait(10)), 0)

@@ -184,7 +184,7 @@ static int gc_lua(lua_State *L)
     return poll_event_gc_lua(L);
 }
 
-int poll_raed_new(lua_State *L)
+int poll_read_new(lua_State *L)
 {
     poll_event_t *ev = luaL_checkudata(L, 1, POLL_EVENT_MT);
     int fd           = luaL_checkinteger(L, 2);

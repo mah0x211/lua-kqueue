@@ -219,8 +219,7 @@ void libopen_poll_signal(lua_State *L)
 
     // initialize all signals
     if (sigfillset(&ALL_SIGNALS) == -1) {
-        luaL_error(L, "failed to initialization: sigfillset: %s",
-                   strerror(errno));
+        luaL_error(L, "failed to initialize: sigfillset: %s", strerror(errno));
     }
 
     // create metatable

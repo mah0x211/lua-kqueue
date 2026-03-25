@@ -113,7 +113,7 @@ void libopen_poll_signal(lua_State *L);
 void libopen_poll_timer(lua_State *L);
 void libopen_poll_trigger(lua_State *L);
 
-int poll_raed_new(lua_State *L);
+int poll_read_new(lua_State *L);
 int poll_write_new(lua_State *L);
 int poll_signal_new(lua_State *L);
 int poll_timer_new(lua_State *L);

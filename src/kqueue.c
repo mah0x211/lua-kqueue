@@ -150,7 +150,7 @@ static int wait_lua(lua_State *L)
     }
 
     if (p->nreg == 0) {
-        // do not wait the event occurrs if no registered events exists
+        // do not wait for events if no registered events exist
         lua_pushinteger(L, 0);
         return 1;
     }
