@@ -21,10 +21,17 @@
  */
 
 #include "lua_kqueue.h"
+#include <sys/mman.h>
 
 int poll_event_gc_lua(lua_State *L)
 {
     poll_event_t *ev = lua_touserdata(L, 1);
+    if (ev->type == POLL_EVENT_TRIGGER) {
+        // close pipe fds and free shared counter
+        close(ev->trigger.write_fd);
+        munmap(ev->trigger.counter, sizeof(uint64_t));
+        close((int)ev->reg_evt.ident);
+    }
     unref(L, ev->ref_poll);
     unref(L, ev->ref_udata);
     return 0;
@@ -82,8 +89,16 @@ int poll_event_revert_lua(lua_State *L, const char *tname)
         lua_pushinteger(L, errno);
         return 3;
     }
+    // close pipe fds and free shared counter for trigger events
+    if (ev->type == POLL_EVENT_TRIGGER) {
+        close(ev->trigger.write_fd);
+        munmap(ev->trigger.counter, sizeof(uint64_t));
+        close((int)ev->reg_evt.ident);
+        ev->trigger = (poll_event_trigger_t){0};
+    }
     ev->reg_evt   = (event_t){0};
     ev->occ_evt   = (event_t){0};
+    ev->type      = POLL_EVENT_NONE;
     ev->ref_udata = unref(L, ev->ref_udata);
     lua_settop(L, 1);
     luaL_getmetatable(L, POLL_EVENT_MT);
@@ -99,7 +114,15 @@ poll_event_t *poll_evset_get(lua_State *L, poll_t *p, event_t *evt)
     // get event set table reference
     switch (evt->filter) {
     case EVFILT_READ:
-        ref_evset = p->ref_evset_read;
+        // search read evset first; trigger also uses EVFILT_READ
+        pushref(L, p->ref_evset_read);
+        lua_rawgeti(L, -1, evt->ident);
+        if (!lua_isnil(L, -1)) {
+            lua_replace(L, -2);
+            return lua_touserdata(L, -1);
+        }
+        lua_pop(L, 2);
+        ref_evset = p->ref_evset_trigger;
         break;
     case EVFILT_WRITE:
         ref_evset = p->ref_evset_write;
@@ -132,22 +155,25 @@ static int evset_add(lua_State *L, poll_event_t *ev, int poll_event_idx)
     int ref_evset = LUA_NOREF;
 
     // get event set table reference
-    switch (ev->reg_evt.filter) {
-    case EVFILT_READ:
+    switch (ev->type) {
+    case POLL_EVENT_READ:
         ref_evset = ev->p->ref_evset_read;
         break;
-    case EVFILT_WRITE:
+    case POLL_EVENT_WRITE:
         ref_evset = ev->p->ref_evset_write;
         break;
-    case EVFILT_SIGNAL:
+    case POLL_EVENT_SIGNAL:
         ref_evset = ev->p->ref_evset_signal;
         break;
-    case EVFILT_TIMER:
+    case POLL_EVENT_TIMER:
         ref_evset = ev->p->ref_evset_timer;
+        break;
+    case POLL_EVENT_TRIGGER:
+        ref_evset = ev->p->ref_evset_trigger;
         break;
 
     default:
-        luaL_error(L, "unsupported event filter: %d", ev->reg_evt.filter);
+        luaL_error(L, "unsupported event type: %d", ev->type);
     }
 
     // set poll_event_t at the ident index
@@ -196,22 +222,25 @@ void poll_evset_del(lua_State *L, poll_event_t *ev)
     int ref_evset = LUA_NOREF;
 
     // get event set table reference
-    switch (ev->reg_evt.filter) {
-    case EVFILT_READ:
+    switch (ev->type) {
+    case POLL_EVENT_READ:
         ref_evset = ev->p->ref_evset_read;
         break;
-    case EVFILT_WRITE:
+    case POLL_EVENT_WRITE:
         ref_evset = ev->p->ref_evset_write;
         break;
-    case EVFILT_SIGNAL:
+    case POLL_EVENT_SIGNAL:
         ref_evset = ev->p->ref_evset_signal;
         break;
-    case EVFILT_TIMER:
+    case POLL_EVENT_TIMER:
         ref_evset = ev->p->ref_evset_timer;
+        break;
+    case POLL_EVENT_TRIGGER:
+        ref_evset = ev->p->ref_evset_trigger;
         break;
 
     default:
-        luaL_error(L, "unsupported event filter: %d", ev->reg_evt.filter);
+        luaL_error(L, "unsupported event type: %d", ev->type);
     }
 
     // get poll_event_t at the ident index

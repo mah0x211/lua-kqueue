@@ -195,6 +195,7 @@ int poll_raed_new(lua_State *L)
     }
 
     EV_SET(&ev->reg_evt, fd, EVFILT_READ, ev->reg_evt.flags, 0, 0, NULL);
+    ev->type = POLL_EVENT_READ;
     if (poll_watch_event(L, ev, 1) != POLL_OK) {
         lua_pushnil(L);
         lua_pushstring(L, strerror(errno));
