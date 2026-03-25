@@ -69,8 +69,8 @@ RECONSUME:
 
     evt = p->evlist[p->cur++];
     if (p->cur >= p->nevt) {
-        // free event list if all events are consumed
-        p->nevt = 0;
+        // all events consumed; reset cursor
+        p->cur = p->nevt = 0;
     }
 
     // NOTE: if poll_evset_get() returns a poll_event_t instance, it is placed
