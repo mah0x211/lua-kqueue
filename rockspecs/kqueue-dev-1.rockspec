@@ -14,20 +14,18 @@ dependencies = {
     "lua >= 5.1",
 }
 build_dependencies = {
-    "luarocks-build-hooks >= 0.2.0",
-    "configh >= 0.2.0",
+    "luarocks-build-hooks >= 0.8.0",
 }
 build = {
     type = "hooks",
     before_build = {
-        "configure.lua",
+        "$(configh)",
         "$(extra-vars)",
+        "configure.lua",
     },
-    -- extra values to append to CFLAGS
     extra_variables = {
         CFLAGS = "-Wall -Wno-trigraphs -Wmissing-field-initializers -Wreturn-type -Wmissing-braces -Wparentheses -Wno-switch -Wunused-function -Wunused-label -Wunused-parameter -Wunused-variable -Wunused-value -Wuninitialized -Wunknown-pragmas -Wshadow -Wsign-compare",
     },
-    -- appends --coverage to CFLAGS and LIBFLAG when KQUEUE_COVERAGE=1
     conditional_variables = {
         KQUEUE_COVERAGE = {
             CFLAGS = "--coverage",
@@ -36,12 +34,23 @@ build = {
     },
     modules = {
         kqueue = {
-            -- glob pattern expanded by configure.lua hook at build time
-            sources = {
-                "impl/*.c",
-            },
+            -- glob patterns expanded by configure.lua hook at build time
+            sources = "impl/*.c",
             incdirs = {
                 "src",
+            },
+            configh = {
+                cc = "$(CC)",
+                output = "src/config.h",
+                output_status = true,
+                headers = {
+                    "sys/event.h",
+                },
+                funcs = {
+                    ["sys/event.h"] = {
+                        "kevent",
+                    },
+                },
             },
         },
     },
